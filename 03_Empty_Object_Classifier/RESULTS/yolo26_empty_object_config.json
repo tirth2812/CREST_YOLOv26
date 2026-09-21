@@ -1,0 +1,36 @@
+{
+  "architecture": "YOLO26n classification",
+  "base_model": "yolo26n-cls.pt",
+  "task": "EMPTY vs OBJECT_PRESENT",
+  "data_source": "real live pallet crops",
+  "older_augmented_images_used": false,
+  "image_size": 320,
+  "epochs": 100,
+  "patience": 20,
+  "batch_size": 16,
+  "optimizer": "AdamW",
+  "learning_rate": 0.0003,
+  "weight_decay": 0.0005,
+  "seed": 42,
+  "validation_capture_groups": [
+    "20260827_130104_274442",
+    "20260827_130408_551301",
+    "20260827_130450_543034",
+    "20260827_130533_073992",
+    "20260827_130658_071078"
+  ],
+  "split_counts": {
+    "train": {
+      "EMPTY": 57,
+      "OBJECT_PRESENT": 57
+    },
+    "val": {
+      "EMPTY": 15,
+      "OBJECT_PRESENT": 15
+    },
+    "test": {
+      "EMPTY": 2,
+      "OBJECT_PRESENT": 2
+    }
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "model": "C:\\Do_Not_Delete_PLC\\CREST_YOLO26\\02_YOLO_Pallet_Detection\\MODEL\\pallet_yolo26n_best.pt",
+  "validation": {
+    "precision": 0.7318272658452284,
+    "recall": 0.8333333333333334,
+    "mAP50": 0.8761173507864684,
+    "mAP50_95": 0.5696539564320332
+  },
+  "heldout_test": {
+    "precision": 0.7148243406466571,
+    "recall": 0.7333333333333333,
+    "mAP50": 0.8375158750749698,
+    "mAP50_95": 0.5157244088783727
+  },
+  "split_counts": {
+    "train": {
+      "images": 10,
+      "pallet_boxes": 60
+    },
+    "val": {
+      "images": 5,
+      "pallet_boxes": 30
+    },
+    "test": {
+      "images": 5,
+      "pallet_boxes": 30
+    }
+  }
+}

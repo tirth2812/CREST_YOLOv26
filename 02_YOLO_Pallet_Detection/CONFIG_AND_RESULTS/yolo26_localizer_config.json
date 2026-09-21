@@ -1,0 +1,25 @@
+{
+  "architecture": "YOLO26n",
+  "base_model": "yolo26n.pt",
+  "task": "pallet detection",
+  "image_size": 640,
+  "epochs": 150,
+  "patience": 30,
+  "batch_size": 8,
+  "seed": 42,
+  "device": "CUDA GPU",
+  "split_counts": {
+    "train": {
+      "images": 10,
+      "pallet_boxes": 60
+    },
+    "val": {
+      "images": 5,
+      "pallet_boxes": 30
+    },
+    "test": {
+      "images": 5,
+      "pallet_boxes": 30
+    }
+  }
+}

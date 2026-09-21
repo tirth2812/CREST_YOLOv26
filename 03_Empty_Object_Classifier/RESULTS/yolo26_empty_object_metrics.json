@@ -1,0 +1,51 @@
+{
+  "model": "C:\\Do_Not_Delete_PLC\\CREST_YOLO26\\03_Empty_Object_Classifier\\MODEL\\empty_object_yolo26n_cls_best.pt",
+  "validation": {
+    "correct": 30,
+    "total": 30,
+    "accuracy": 1.0,
+    "per_class": {
+      "EMPTY": {
+        "correct": 15,
+        "total": 15,
+        "accuracy": 1.0
+      },
+      "OBJECT_PRESENT": {
+        "correct": 15,
+        "total": 15,
+        "accuracy": 1.0
+      }
+    }
+  },
+  "locked_heldout_test": {
+    "correct": 4,
+    "total": 4,
+    "accuracy": 1.0,
+    "per_class": {
+      "EMPTY": {
+        "correct": 2,
+        "total": 2,
+        "accuracy": 1.0
+      },
+      "OBJECT_PRESENT": {
+        "correct": 2,
+        "total": 2,
+        "accuracy": 1.0
+      }
+    }
+  },
+  "split_counts": {
+    "train": {
+      "EMPTY": 57,
+      "OBJECT_PRESENT": 57
+    },
+    "val": {
+      "EMPTY": 15,
+      "OBJECT_PRESENT": 15
+    },
+    "test": {
+      "EMPTY": 2,
+      "OBJECT_PRESENT": 2
+    }
+  }
+}

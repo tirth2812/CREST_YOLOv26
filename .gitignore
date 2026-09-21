@@ -1,0 +1,66 @@
+﻿# =========================
+# Python
+# =========================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# =========================
+# Virtual environments
+# =========================
+venv/
+.venv/
+vlm_env/
+
+# =========================
+# YOLO / ML model weights
+# =========================
+*.pt
+*.pth
+*.onnx
+*.engine
+
+# =========================
+# Dataset images / large data
+# =========================
+02_YOLO_Pallet_Detection/DATASET/
+03_Empty_Object_Classifier/DATASET/
+
+# Stage 01 source images
+01_Pallet_Annotation/DATA/images/
+
+# =========================
+# Training/runtime generated outputs
+# =========================
+**/training_output/
+**/runs/
+**/weights/
+**/*.cache
+
+07_Final_Empty_Accepted_Rejected_System/RESULTS/
+
+# =========================
+# Temporary / generated images
+# =========================
+**/saved_live_object_detection_frames/
+**/Live_Results/
+
+# =========================
+# Editor / OS files
+# =========================
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Stage 07 training datasets
+07_Final_Empty_Accepted_Rejected_System/DATASET/
+
+# =========================
+# Stage 07 - keep only final runtime code
+# =========================
+07_Final_Empty_Accepted_Rejected_System/CODE/*.py
+!07_Final_Empty_Accepted_Rejected_System/CODE/27_live_fast_new_object_final.py
+!07_Final_Empty_Accepted_Rejected_System/CODE/dynamic_live_pallet_detection.py

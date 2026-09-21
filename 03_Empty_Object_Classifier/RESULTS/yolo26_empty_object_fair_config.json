@@ -1,0 +1,39 @@
+{
+  "architecture": "YOLO26n Classification",
+  "base_model": "yolo26n-cls.pt",
+  "task": "EMPTY vs OBJECT_PRESENT",
+  "source_dataset": "C:\\Do_Not_Delete_PLC\\original images\\06_Empty_vs_Object_Classifier\\04_Improved_Classifier_Training\\final_real_live_classifier_dataset",
+  "fair_comparison": true,
+  "same_yolo11_split": true,
+  "classes": [
+    "EMPTY",
+    "OBJECT_PRESENT"
+  ],
+  "training_counts": {
+    "train": {
+      "EMPTY": 95,
+      "OBJECT_PRESENT": 95
+    },
+    "val": {
+      "EMPTY": 25,
+      "OBJECT_PRESENT": 25
+    }
+  },
+  "settings": {
+    "imgsz": 320,
+    "epochs": 100,
+    "patience": 20,
+    "batch": 8,
+    "optimizer": "AdamW",
+    "lr0": 0.001,
+    "weight_decay": 0.0005,
+    "degrees": 5.0,
+    "translate": 0.02,
+    "scale": 0.05,
+    "fliplr": 0.0,
+    "flipud": 0.0,
+    "erasing": 0.0,
+    "seed": 42,
+    "deterministic": true
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "seed": 42,
+  "policy": "Real live crops are split by capture group into training and validation. Four current WhatsApp images are locked as a separate held-out test and are never used during training or model selection.",
+  "validation_capture_groups": [
+    "20260827_130104_274442",
+    "20260827_130408_551301",
+    "20260827_130450_543034",
+    "20260827_130533_073992",
+    "20260827_130658_071078"
+  ],
+  "heldout_test_files": {
+    "EMPTY": [
+      "WhatsApp Image 2026-08-26 at 2.13.52 PM (1).jpeg",
+      "WhatsApp Image 2026-08-26 at 2.13.52 PM (2).jpeg"
+    ],
+    "OBJECT_PRESENT": [
+      "WhatsApp Image 2026-08-26 at 2.57.35 PM (2).jpeg",
+      "WhatsApp Image 2026-08-26 at 2.57.35 PM (6).jpeg"
+    ]
+  },
+  "split_counts": {
+    "train": {
+      "EMPTY": 57,
+      "OBJECT_PRESENT": 57
+    },
+    "val": {
+      "EMPTY": 15,
+      "OBJECT_PRESENT": 15
+    },
+    "test": {
+      "EMPTY": 2,
+      "OBJECT_PRESENT": 2
+    }
+  }
+}

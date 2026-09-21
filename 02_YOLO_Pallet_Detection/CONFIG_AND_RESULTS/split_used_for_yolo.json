@@ -1,0 +1,28 @@
+{
+  "train": [
+    "REJECTED/original_0058.jpg",
+    "REJECTED/original_0144.jpg",
+    "REJECTED/original_0401.jpg",
+    "REJECTED/original_0408.jpg",
+    "empty/original_0020.jpg",
+    "empty/original_0039.jpg",
+    "empty/original_0093.jpg",
+    "empty/original_0096.jpg",
+    "empty/original_0236.jpg",
+    "empty/original_0250.jpg"
+  ],
+  "val": [
+    "REJECTED/original_0073.jpg",
+    "REJECTED/original_0125.jpg",
+    "REJECTED/original_0199.jpg",
+    "empty/original_0086.jpg",
+    "empty/original_0099.jpg"
+  ],
+  "test": [
+    "REJECTED/original_0097.jpg",
+    "REJECTED/original_0289.jpg",
+    "REJECTED/original_0296.jpg",
+    "empty/original_0239.jpg",
+    "empty/original_0287.jpg"
+  ]
+}

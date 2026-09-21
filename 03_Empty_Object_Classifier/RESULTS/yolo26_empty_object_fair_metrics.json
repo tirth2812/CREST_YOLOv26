@@ -1,0 +1,18 @@
+{
+  "total": 50,
+  "correct": 50,
+  "wrong": 0,
+  "accuracy": 1.0,
+  "per_class": {
+    "EMPTY": {
+      "correct": 25,
+      "total": 25,
+      "accuracy": 1.0
+    },
+    "OBJECT_PRESENT": {
+      "correct": 25,
+      "total": 25,
+      "accuracy": 1.0
+    }
+  }
+}

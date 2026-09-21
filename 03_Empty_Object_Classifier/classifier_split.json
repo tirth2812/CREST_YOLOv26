@@ -1,0 +1,59 @@
+{
+  "task": "EMPTY vs OBJECT_PRESENT",
+  "seed": 42,
+  "important_note": "Only original close-up images were used. Existing augmented images were intentionally excluded to prevent possible data leakage.",
+  "class_mapping": {
+    "EMPTY": "Original empty pallet images",
+    "OBJECT_PRESENT": "Original rejected close-up images. For this stage, rejected means an object is present. X classification is ignored."
+  },
+  "counts": {
+    "train": {
+      "EMPTY": 5,
+      "OBJECT_PRESENT": 5
+    },
+    "val": {
+      "EMPTY": 1,
+      "OBJECT_PRESENT": 1
+    },
+    "test": {
+      "EMPTY": 2,
+      "OBJECT_PRESENT": 2
+    }
+  },
+  "files": {
+    "train": {
+      "EMPTY": [
+        "WhatsApp Image 2026-08-26 at 2.13.52 PM (4).jpeg",
+        "WhatsApp Image 2026-08-26 at 2.13.52 PM (5).jpeg",
+        "WhatsApp Image 2026-08-26 at 2.13.52 PM (7).jpeg",
+        "WhatsApp Image 2026-08-26 at 2.13.52 PM.jpeg",
+        "WhatsApp Image 2026-08-26 at 2.13.52 PM (3).jpeg"
+      ],
+      "OBJECT_PRESENT": [
+        "WhatsApp Image 2026-08-26 at 2.15.55 PM (4).jpeg",
+        "WhatsApp Image 2026-08-26 at 2.15.55 PM.jpeg",
+        "WhatsApp Image 2026-08-26 at 2.15.55 PM (3).jpeg",
+        "WhatsApp Image 2026-08-26 at 2.15.55 PM (1).jpeg",
+        "WhatsApp Image 2026-08-26 at 2.15.55 PM (5).jpeg"
+      ]
+    },
+    "val": {
+      "EMPTY": [
+        "WhatsApp Image 2026-08-26 at 2.13.52 PM (6).jpeg"
+      ],
+      "OBJECT_PRESENT": [
+        "WhatsApp Image 2026-08-26 at 2.15.55 PM (7).jpeg"
+      ]
+    },
+    "test": {
+      "EMPTY": [
+        "WhatsApp Image 2026-08-26 at 2.13.52 PM (1).jpeg",
+        "WhatsApp Image 2026-08-26 at 2.13.52 PM (2).jpeg"
+      ],
+      "OBJECT_PRESENT": [
+        "WhatsApp Image 2026-08-26 at 2.15.55 PM (6).jpeg",
+        "WhatsApp Image 2026-08-26 at 2.15.55 PM (2).jpeg"
+      ]
+    }
+  }
+}

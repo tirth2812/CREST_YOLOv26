@@ -1,0 +1,1591 @@
+{
+    "version": 2,
+    "classes": [
+        "EMPTY",
+        "REJECTED"
+    ],
+    "selected_images": [
+        {
+            "image": "empty/original_0039.jpg",
+            "source_class": "EMPTY"
+        },
+        {
+            "image": "empty/original_0020.jpg",
+            "source_class": "EMPTY"
+        },
+        {
+            "image": "empty/original_0236.jpg",
+            "source_class": "EMPTY"
+        },
+        {
+            "image": "empty/original_0093.jpg",
+            "source_class": "EMPTY"
+        },
+        {
+            "image": "empty/original_0099.jpg",
+            "source_class": "EMPTY"
+        },
+        {
+            "image": "empty/original_0086.jpg",
+            "source_class": "EMPTY"
+        },
+        {
+            "image": "empty/original_0239.jpg",
+            "source_class": "EMPTY"
+        },
+        {
+            "image": "empty/original_0250.jpg",
+            "source_class": "EMPTY"
+        },
+        {
+            "image": "empty/original_0096.jpg",
+            "source_class": "EMPTY"
+        },
+        {
+            "image": "empty/original_0287.jpg",
+            "source_class": "EMPTY"
+        },
+        {
+            "image": "REJECTED/original_0401.jpg",
+            "source_class": "REJECTED"
+        },
+        {
+            "image": "REJECTED/original_0144.jpg",
+            "source_class": "REJECTED"
+        },
+        {
+            "image": "REJECTED/original_0073.jpg",
+            "source_class": "REJECTED"
+        },
+        {
+            "image": "REJECTED/original_0296.jpg",
+            "source_class": "REJECTED"
+        },
+        {
+            "image": "REJECTED/original_0125.jpg",
+            "source_class": "REJECTED"
+        },
+        {
+            "image": "REJECTED/original_0097.jpg",
+            "source_class": "REJECTED"
+        },
+        {
+            "image": "REJECTED/original_0058.jpg",
+            "source_class": "REJECTED"
+        },
+        {
+            "image": "REJECTED/original_0408.jpg",
+            "source_class": "REJECTED"
+        },
+        {
+            "image": "REJECTED/original_0289.jpg",
+            "source_class": "REJECTED"
+        },
+        {
+            "image": "REJECTED/original_0199.jpg",
+            "source_class": "REJECTED"
+        }
+    ],
+    "images": {
+        "empty/original_0039.jpg": {
+            "image": "empty/original_0039.jpg",
+            "source_class": "EMPTY",
+            "width": 1920,
+            "height": 1080,
+            "reviewed": true,
+            "pallets": [
+                {
+                    "bbox": [
+                        248,
+                        310,
+                        436,
+                        440
+                    ],
+                    "class": "EMPTY",
+                    "object_present": false,
+                    "x_mark_visible": false
+                },
+                {
+                    "bbox": [
+                        986,
+                        268,
+                        1143,
+                        380
+                    ],
+                    "class": "EMPTY",
+                    "object_present": false,
+                    "x_mark_visible": false
+                },
+                {
+                    "bbox": [
+                        1434,
+                        247,
+                        1618,
+                        385
+                    ],
+                    "class": "EMPTY",
+                    "object_present": false,
+                    "x_mark_visible": false
+                },
+                {
+                    "bbox": [
+                        1562,
+                        520,
+                        1788,
+                        721
+                    ],
+                    "class": "EMPTY",
+                    "object_present": false,
+                    "x_mark_visible": false
+                },
+                {
+                    "bbox": [
+                        908,
+                        586,
+                        1101,
+                        744
+                    ],
+                    "class": "EMPTY",
+                    "object_present": false,
+                    "x_mark_visible": false
+                },
+                {
+                    "bbox": [
+                        212,
+                        566,
+                        433,
+                        744
+                    ],
+                    "class": "EMPTY",
+                    "object_present": false,
+                    "x_mark_visible": false
+                }
+            ]
+        },
+        "empty/original_0020.jpg": {
+            "image": "empty/original_0020.jpg",
+            "source_class": "EMPTY",
+            "width": 1920,
+            "height": 1080,
+            "reviewed": true,
+            "pallets": [
+                {
+                    "bbox": [
+                        163,
+                        468,
+                        311,
+                        634
+                    ],
+                    "class": "EMPTY",
+                    "object_present": false,
+                    "x_mark_visible": false
+                },
+                {
+                    "bbox": [
+                        490,
+                        586,
+                        701,
+                        750
+                    ],
+                    "class": "EMPTY",
+                    "object_present": false,
+                    "x_mark_visible": false
+                },
+                {
+                    "bbox": [
+                        1201,
+                        589,
+                        1399,
+                        750
+                    ],
+                    "class": "EMPTY",
+                    "object_present": false,
+                    "x_mark_visible": false
+                },
+                {
+                    "bbox": [
+                        1574,
+                        316,
+                        1789,
+                        516
+                    ],
+                    "class": "EMPTY",
+                    "object_present": false,
+                    "x_mark_visible": false
+                },
+                {
+                    "bbox": [
+                        1153,
+                        247,
+                        1356,
+                        387
+                    ],
+                    "class": "EMPTY",
+                    "object_present": false,
+                    "x_mark_visible": false
+                },
+                {
+                    "bbox": [
+                        708,
+                        268,
+                        881,
+                        394
+                    ],
+                    "class": "EMPTY",
+                    "object_present": false,
+                    "x_mark_visible": false
+                }
+            ]
+        },
+        "empty/original_0236.jpg": {
+            "image": "empty/original_0236.jpg",
+            "source_class": "EMPTY",
+            "width": 1920,
+            "height": 1080,
+            "reviewed": true,
+            "pallets": [
+                {
+                    "bbox": [
+                        622,
+                        268,
+                        794,
+                        383
+                    ],
+                    "class": "EMPTY",
+                    "object_present": false,
+                    "x_mark_visible": false
+                },
+                {
+                    "bbox": [
+                        413,
+                        595,
+                        639,
+                        746
+                    ],
+                    "class": "EMPTY",
+                    "object_present": false,
+                    "x_mark_visible": false
+                },
+                {
+                    "bbox": [
+                        940,
+                        573,
+                        1126,
+                        744
+                    ],
+                    "class": "EMPTY",
+                    "object_present": false,
+                    "x_mark_visible": false
+                },
+                {
+                    "bbox": [
+                        1213,
+                        264,
+                        1399,
+                        387
+                    ],
+                    "class": "EMPTY",
+                    "object_present": false,
+                    "x_mark_visible": false
+                },
+                {
+                    "bbox": [
+                        1632,
+                        385,
+                        1802,
+                        572
+                    ],
+                    "class": "EMPTY",
+                    "object_present": false,
+                    "x_mark_visible": false
+                },
+                {
+                    "bbox": [
+                        166,
+                        429,
+                        328,
+                        581
+                    ],
+                    "class": "EMPTY",
+                    "object_present": false,
+                    "x_mark_visible": false
+                }
+            ]
+        },
+        "empty/original_0093.jpg": {
+            "image": "empty/original_0093.jpg",
+            "source_class": "EMPTY",
+            "width": 1920,
+            "height": 1080,
+            "reviewed": true,
+            "pallets": [
+                {
+                    "bbox": [
+                        440,
+                        278,
+                        613,
+                        393
+                    ],
+                    "class": "EMPTY",
+                    "object_present": false,
+                    "x_mark_visible": false
+                },
+                {
+                    "bbox": [
+                        173,
+                        544,
+                        398,
+                        710
+                    ],
+                    "class": "EMPTY",
+                    "object_present": false,
+                    "x_mark_visible": false
+                },
+                {
+                    "bbox": [
+                        660,
+                        591,
+                        851,
+                        742
+                    ],
+                    "class": "EMPTY",
+                    "object_present": false,
+                    "x_mark_visible": false
+                },
+                {
+                    "bbox": [
+                        1157,
+                        602,
+                        1381,
+                        740
+                    ],
+                    "class": "EMPTY",
+                    "object_present": false,
+                    "x_mark_visible": false
+                },
+                {
+                    "bbox": [
+                        1038,
+                        259,
+                        1201,
+                        383
+                    ],
+                    "class": "EMPTY",
+                    "object_present": false,
+                    "x_mark_visible": false
+                },
+                {
+                    "bbox": [
+                        1501,
+                        250,
+                        1704,
+                        448
+                    ],
+                    "class": "EMPTY",
+                    "object_present": false,
+                    "x_mark_visible": false
+                }
+            ]
+        },
+        "empty/original_0099.jpg": {
+            "image": "empty/original_0099.jpg",
+            "source_class": "EMPTY",
+            "width": 1920,
+            "height": 1080,
+            "reviewed": true,
+            "pallets": [
+                {
+                    "bbox": [
+                        549,
+                        262,
+                        710,
+                        404
+                    ],
+                    "class": "EMPTY",
+                    "object_present": false,
+                    "x_mark_visible": false
+                },
+                {
+                    "bbox": [
+                        195,
+                        403,
+                        349,
+                        559
+                    ],
+                    "class": "EMPTY",
+                    "object_present": false,
+                    "x_mark_visible": false
+                },
+                {
+                    "bbox": [
+                        544,
+                        598,
+                        756,
+                        736
+                    ],
+                    "class": "EMPTY",
+                    "object_present": false,
+                    "x_mark_visible": false
+                },
+                {
+                    "bbox": [
+                        1251,
+                        595,
+                        1476,
+                        750
+                    ],
+                    "class": "EMPTY",
+                    "object_present": false,
+                    "x_mark_visible": false
+                },
+                {
+                    "bbox": [
+                        1320,
+                        256,
+                        1498,
+                        378
+                    ],
+                    "class": "EMPTY",
+                    "object_present": false,
+                    "x_mark_visible": false
+                },
+                {
+                    "bbox": [
+                        1650,
+                        426,
+                        1812,
+                        623
+                    ],
+                    "class": "EMPTY",
+                    "object_present": false,
+                    "x_mark_visible": false
+                }
+            ]
+        },
+        "empty/original_0086.jpg": {
+            "image": "empty/original_0086.jpg",
+            "source_class": "EMPTY",
+            "width": 1920,
+            "height": 1080,
+            "reviewed": true,
+            "pallets": [
+                {
+                    "bbox": [
+                        494,
+                        262,
+                        676,
+                        407
+                    ],
+                    "class": "EMPTY",
+                    "object_present": false,
+                    "x_mark_visible": false
+                },
+                {
+                    "bbox": [
+                        955,
+                        265,
+                        1123,
+                        389
+                    ],
+                    "class": "EMPTY",
+                    "object_present": false,
+                    "x_mark_visible": false
+                },
+                {
+                    "bbox": [
+                        756,
+                        593,
+                        950,
+                        750
+                    ],
+                    "class": "EMPTY",
+                    "object_present": false,
+                    "x_mark_visible": false
+                },
+                {
+                    "bbox": [
+                        193,
+                        387,
+                        333,
+                        550
+                    ],
+                    "class": "EMPTY",
+                    "object_present": false,
+                    "x_mark_visible": false
+                },
+                {
+                    "bbox": [
+                        1315,
+                        588,
+                        1539,
+                        745
+                    ],
+                    "class": "EMPTY",
+                    "object_present": false,
+                    "x_mark_visible": false
+                },
+                {
+                    "bbox": [
+                        1542,
+                        280,
+                        1756,
+                        452
+                    ],
+                    "class": "EMPTY",
+                    "object_present": false,
+                    "x_mark_visible": false
+                }
+            ]
+        },
+        "empty/original_0239.jpg": {
+            "image": "empty/original_0239.jpg",
+            "source_class": "EMPTY",
+            "width": 1920,
+            "height": 1080,
+            "reviewed": true,
+            "pallets": [
+                {
+                    "bbox": [
+                        719,
+                        271,
+                        890,
+                        389
+                    ],
+                    "class": "EMPTY",
+                    "object_present": false,
+                    "x_mark_visible": false
+                },
+                {
+                    "bbox": [
+                        202,
+                        337,
+                        380,
+                        502
+                    ],
+                    "class": "EMPTY",
+                    "object_present": false,
+                    "x_mark_visible": false
+                },
+                {
+                    "bbox": [
+                        479,
+                        589,
+                        678,
+                        750
+                    ],
+                    "class": "EMPTY",
+                    "object_present": false,
+                    "x_mark_visible": false
+                },
+                {
+                    "bbox": [
+                        978,
+                        596,
+                        1210,
+                        753
+                    ],
+                    "class": "EMPTY",
+                    "object_present": false,
+                    "x_mark_visible": false
+                },
+                {
+                    "bbox": [
+                        1494,
+                        577,
+                        1719,
+                        739
+                    ],
+                    "class": "EMPTY",
+                    "object_present": false,
+                    "x_mark_visible": false
+                },
+                {
+                    "bbox": [
+                        1211,
+                        255,
+                        1408,
+                        397
+                    ],
+                    "class": "EMPTY",
+                    "object_present": false,
+                    "x_mark_visible": false
+                }
+            ]
+        },
+        "empty/original_0250.jpg": {
+            "image": "empty/original_0250.jpg",
+            "source_class": "EMPTY",
+            "width": 1920,
+            "height": 1080,
+            "reviewed": true,
+            "pallets": [
+                {
+                    "bbox": [
+                        658,
+                        260,
+                        812,
+                        393
+                    ],
+                    "class": "EMPTY",
+                    "object_present": false,
+                    "x_mark_visible": false
+                },
+                {
+                    "bbox": [
+                        230,
+                        296,
+                        421,
+                        445
+                    ],
+                    "class": "EMPTY",
+                    "object_present": false,
+                    "x_mark_visible": false
+                },
+                {
+                    "bbox": [
+                        580,
+                        581,
+                        820,
+                        744
+                    ],
+                    "class": "EMPTY",
+                    "object_present": false,
+                    "x_mark_visible": false
+                },
+                {
+                    "bbox": [
+                        1158,
+                        593,
+                        1352,
+                        740
+                    ],
+                    "class": "EMPTY",
+                    "object_present": false,
+                    "x_mark_visible": false
+                },
+                {
+                    "bbox": [
+                        1100,
+                        251,
+                        1292,
+                        381
+                    ],
+                    "class": "EMPTY",
+                    "object_present": false,
+                    "x_mark_visible": false
+                },
+                {
+                    "bbox": [
+                        1637,
+                        392,
+                        1801,
+                        559
+                    ],
+                    "class": "EMPTY",
+                    "object_present": false,
+                    "x_mark_visible": false
+                }
+            ]
+        },
+        "empty/original_0096.jpg": {
+            "image": "empty/original_0096.jpg",
+            "source_class": "EMPTY",
+            "width": 1920,
+            "height": 1080,
+            "reviewed": true,
+            "pallets": [
+                {
+                    "bbox": [
+                        541,
+                        275,
+                        719,
+                        399
+                    ],
+                    "class": "EMPTY",
+                    "object_present": false,
+                    "x_mark_visible": false
+                },
+                {
+                    "bbox": [
+                        157,
+                        490,
+                        329,
+                        632
+                    ],
+                    "class": "EMPTY",
+                    "object_present": false,
+                    "x_mark_visible": false
+                },
+                {
+                    "bbox": [
+                        689,
+                        582,
+                        888,
+                        740
+                    ],
+                    "class": "EMPTY",
+                    "object_present": false,
+                    "x_mark_visible": false
+                },
+                {
+                    "bbox": [
+                        1037,
+                        247,
+                        1245,
+                        403
+                    ],
+                    "class": "EMPTY",
+                    "object_present": false,
+                    "x_mark_visible": false
+                },
+                {
+                    "bbox": [
+                        1217,
+                        593,
+                        1426,
+                        754
+                    ],
+                    "class": "EMPTY",
+                    "object_present": false,
+                    "x_mark_visible": false
+                },
+                {
+                    "bbox": [
+                        1633,
+                        448,
+                        1801,
+                        652
+                    ],
+                    "class": "EMPTY",
+                    "object_present": false,
+                    "x_mark_visible": false
+                }
+            ]
+        },
+        "empty/original_0287.jpg": {
+            "image": "empty/original_0287.jpg",
+            "source_class": "EMPTY",
+            "width": 1920,
+            "height": 1080,
+            "reviewed": true,
+            "pallets": [
+                {
+                    "bbox": [
+                        902,
+                        268,
+                        1050,
+                        374
+                    ],
+                    "class": "EMPTY",
+                    "object_present": false,
+                    "x_mark_visible": false
+                },
+                {
+                    "bbox": [
+                        189,
+                        357,
+                        340,
+                        535
+                    ],
+                    "class": "EMPTY",
+                    "object_present": false,
+                    "x_mark_visible": false
+                },
+                {
+                    "bbox": [
+                        353,
+                        586,
+                        571,
+                        736
+                    ],
+                    "class": "EMPTY",
+                    "object_present": false,
+                    "x_mark_visible": false
+                },
+                {
+                    "bbox": [
+                        1076,
+                        600,
+                        1274,
+                        737
+                    ],
+                    "class": "EMPTY",
+                    "object_present": false,
+                    "x_mark_visible": false
+                },
+                {
+                    "bbox": [
+                        1354,
+                        246,
+                        1519,
+                        361
+                    ],
+                    "class": "EMPTY",
+                    "object_present": false,
+                    "x_mark_visible": false
+                },
+                {
+                    "bbox": [
+                        1628,
+                        442,
+                        1807,
+                        641
+                    ],
+                    "class": "EMPTY",
+                    "object_present": false,
+                    "x_mark_visible": false
+                }
+            ]
+        },
+        "REJECTED/original_0401.jpg": {
+            "image": "REJECTED/original_0401.jpg",
+            "source_class": "REJECTED",
+            "width": 1920,
+            "height": 1080,
+            "reviewed": true,
+            "pallets": [
+                {
+                    "bbox": [
+                        817,
+                        265,
+                        977,
+                        381
+                    ],
+                    "class": "REJECTED",
+                    "object_present": true,
+                    "x_mark_visible": true
+                },
+                {
+                    "bbox": [
+                        349,
+                        292,
+                        524,
+                        396
+                    ],
+                    "class": "REJECTED",
+                    "object_present": true,
+                    "x_mark_visible": true
+                },
+                {
+                    "bbox": [
+                        180,
+                        408,
+                        314,
+                        572
+                    ],
+                    "class": "REJECTED",
+                    "object_present": true,
+                    "x_mark_visible": true
+                },
+                {
+                    "bbox": [
+                        924,
+                        596,
+                        1125,
+                        733
+                    ],
+                    "class": "REJECTED",
+                    "object_present": true,
+                    "x_mark_visible": true
+                },
+                {
+                    "bbox": [
+                        1295,
+                        259,
+                        1469,
+                        376
+                    ],
+                    "class": "REJECTED",
+                    "object_present": true,
+                    "x_mark_visible": true
+                },
+                {
+                    "bbox": [
+                        1576,
+                        486,
+                        1801,
+                        698
+                    ],
+                    "class": "REJECTED",
+                    "object_present": true,
+                    "x_mark_visible": true
+                }
+            ]
+        },
+        "REJECTED/original_0144.jpg": {
+            "image": "REJECTED/original_0144.jpg",
+            "source_class": "REJECTED",
+            "width": 1920,
+            "height": 1080,
+            "reviewed": true,
+            "pallets": [
+                {
+                    "bbox": [
+                        682,
+                        259,
+                        850,
+                        389
+                    ],
+                    "class": "REJECTED",
+                    "object_present": true,
+                    "x_mark_visible": true
+                },
+                {
+                    "bbox": [
+                        210,
+                        326,
+                        361,
+                        506
+                    ],
+                    "class": "REJECTED",
+                    "object_present": true,
+                    "x_mark_visible": true
+                },
+                {
+                    "bbox": [
+                        456,
+                        591,
+                        669,
+                        750
+                    ],
+                    "class": "REJECTED",
+                    "object_present": true,
+                    "x_mark_visible": true
+                },
+                {
+                    "bbox": [
+                        1069,
+                        586,
+                        1294,
+                        751
+                    ],
+                    "class": "REJECTED",
+                    "object_present": true,
+                    "x_mark_visible": true
+                },
+                {
+                    "bbox": [
+                        1478,
+                        243,
+                        1700,
+                        442
+                    ],
+                    "class": "REJECTED",
+                    "object_present": true,
+                    "x_mark_visible": true
+                },
+                {
+                    "bbox": [
+                        1585,
+                        506,
+                        1798,
+                        730
+                    ],
+                    "class": "REJECTED",
+                    "object_present": true,
+                    "x_mark_visible": true
+                }
+            ]
+        },
+        "REJECTED/original_0073.jpg": {
+            "image": "REJECTED/original_0073.jpg",
+            "source_class": "REJECTED",
+            "width": 1920,
+            "height": 1080,
+            "reviewed": true,
+            "pallets": [
+                {
+                    "bbox": [
+                        1066,
+                        253,
+                        1238,
+                        392
+                    ],
+                    "class": "REJECTED",
+                    "object_present": true,
+                    "x_mark_visible": true
+                },
+                {
+                    "bbox": [
+                        483,
+                        262,
+                        669,
+                        406
+                    ],
+                    "class": "REJECTED",
+                    "object_present": true,
+                    "x_mark_visible": true
+                },
+                {
+                    "bbox": [
+                        177,
+                        383,
+                        337,
+                        580
+                    ],
+                    "class": "REJECTED",
+                    "object_present": true,
+                    "x_mark_visible": true
+                },
+                {
+                    "bbox": [
+                        372,
+                        603,
+                        563,
+                        736
+                    ],
+                    "class": "REJECTED",
+                    "object_present": true,
+                    "x_mark_visible": true
+                },
+                {
+                    "bbox": [
+                        1304,
+                        596,
+                        1551,
+                        746
+                    ],
+                    "class": "REJECTED",
+                    "object_present": true,
+                    "x_mark_visible": true
+                },
+                {
+                    "bbox": [
+                        1588,
+                        337,
+                        1778,
+                        517
+                    ],
+                    "class": "REJECTED",
+                    "object_present": true,
+                    "x_mark_visible": true
+                }
+            ]
+        },
+        "REJECTED/original_0296.jpg": {
+            "image": "REJECTED/original_0296.jpg",
+            "source_class": "REJECTED",
+            "width": 1920,
+            "height": 1080,
+            "reviewed": true,
+            "pallets": [
+                {
+                    "bbox": [
+                        634,
+                        264,
+                        814,
+                        389
+                    ],
+                    "class": "REJECTED",
+                    "object_present": true,
+                    "x_mark_visible": true
+                },
+                {
+                    "bbox": [
+                        305,
+                        278,
+                        495,
+                        413
+                    ],
+                    "class": "REJECTED",
+                    "object_present": true,
+                    "x_mark_visible": true
+                },
+                {
+                    "bbox": [
+                        561,
+                        586,
+                        764,
+                        721
+                    ],
+                    "class": "REJECTED",
+                    "object_present": true,
+                    "x_mark_visible": true
+                },
+                {
+                    "bbox": [
+                        1138,
+                        233,
+                        1315,
+                        397
+                    ],
+                    "class": "REJECTED",
+                    "object_present": true,
+                    "x_mark_visible": true
+                },
+                {
+                    "bbox": [
+                        1251,
+                        591,
+                        1467,
+                        736
+                    ],
+                    "class": "REJECTED",
+                    "object_present": true,
+                    "x_mark_visible": true
+                },
+                {
+                    "bbox": [
+                        1588,
+                        317,
+                        1778,
+                        503
+                    ],
+                    "class": "REJECTED",
+                    "object_present": true,
+                    "x_mark_visible": true
+                }
+            ]
+        },
+        "REJECTED/original_0125.jpg": {
+            "image": "REJECTED/original_0125.jpg",
+            "source_class": "REJECTED",
+            "width": 1920,
+            "height": 1080,
+            "reviewed": true,
+            "pallets": [
+                {
+                    "bbox": [
+                        431,
+                        271,
+                        598,
+                        396
+                    ],
+                    "class": "REJECTED",
+                    "object_present": true,
+                    "x_mark_visible": true
+                },
+                {
+                    "bbox": [
+                        155,
+                        520,
+                        361,
+                        677
+                    ],
+                    "class": "REJECTED",
+                    "object_present": true,
+                    "x_mark_visible": true
+                },
+                {
+                    "bbox": [
+                        746,
+                        586,
+                        945,
+                        746
+                    ],
+                    "class": "REJECTED",
+                    "object_present": true,
+                    "x_mark_visible": true
+                },
+                {
+                    "bbox": [
+                        1261,
+                        252,
+                        1449,
+                        383
+                    ],
+                    "class": "REJECTED",
+                    "object_present": true,
+                    "x_mark_visible": true
+                },
+                {
+                    "bbox": [
+                        1583,
+                        306,
+                        1780,
+                        509
+                    ],
+                    "class": "REJECTED",
+                    "object_present": true,
+                    "x_mark_visible": true
+                },
+                {
+                    "bbox": [
+                        1386,
+                        599,
+                        1606,
+                        737
+                    ],
+                    "class": "REJECTED",
+                    "object_present": true,
+                    "x_mark_visible": true
+                }
+            ]
+        },
+        "REJECTED/original_0097.jpg": {
+            "image": "REJECTED/original_0097.jpg",
+            "source_class": "REJECTED",
+            "width": 1920,
+            "height": 1080,
+            "reviewed": true,
+            "pallets": [
+                {
+                    "bbox": [
+                        493,
+                        273,
+                        675,
+                        402
+                    ],
+                    "class": "REJECTED",
+                    "object_present": true,
+                    "x_mark_visible": true
+                },
+                {
+                    "bbox": [
+                        1091,
+                        252,
+                        1297,
+                        408
+                    ],
+                    "class": "REJECTED",
+                    "object_present": true,
+                    "x_mark_visible": true
+                },
+                {
+                    "bbox": [
+                        1571,
+                        300,
+                        1780,
+                        506
+                    ],
+                    "class": "REJECTED",
+                    "object_present": true,
+                    "x_mark_visible": true
+                },
+                {
+                    "bbox": [
+                        998,
+                        593,
+                        1204,
+                        749
+                    ],
+                    "class": "REJECTED",
+                    "object_present": true,
+                    "x_mark_visible": true
+                },
+                {
+                    "bbox": [
+                        518,
+                        584,
+                        731,
+                        740
+                    ],
+                    "class": "REJECTED",
+                    "object_present": true,
+                    "x_mark_visible": true
+                },
+                {
+                    "bbox": [
+                        166,
+                        477,
+                        332,
+                        645
+                    ],
+                    "class": "REJECTED",
+                    "object_present": true,
+                    "x_mark_visible": true
+                }
+            ]
+        },
+        "REJECTED/original_0058.jpg": {
+            "image": "REJECTED/original_0058.jpg",
+            "source_class": "REJECTED",
+            "width": 1920,
+            "height": 1080,
+            "reviewed": true,
+            "pallets": [
+                {
+                    "bbox": [
+                        736,
+                        264,
+                        901,
+                        397
+                    ],
+                    "class": "REJECTED",
+                    "object_present": true,
+                    "x_mark_visible": true
+                },
+                {
+                    "bbox": [
+                        195,
+                        330,
+                        379,
+                        494
+                    ],
+                    "class": "REJECTED",
+                    "object_present": true,
+                    "x_mark_visible": true
+                },
+                {
+                    "bbox": [
+                        410,
+                        595,
+                        625,
+                        736
+                    ],
+                    "class": "REJECTED",
+                    "object_present": true,
+                    "x_mark_visible": true
+                },
+                {
+                    "bbox": [
+                        933,
+                        590,
+                        1143,
+                        755
+                    ],
+                    "class": "REJECTED",
+                    "object_present": true,
+                    "x_mark_visible": true
+                },
+                {
+                    "bbox": [
+                        1427,
+                        582,
+                        1660,
+                        742
+                    ],
+                    "class": "REJECTED",
+                    "object_present": true,
+                    "x_mark_visible": true
+                },
+                {
+                    "bbox": [
+                        1260,
+                        246,
+                        1432,
+                        396
+                    ],
+                    "class": "REJECTED",
+                    "object_present": true,
+                    "x_mark_visible": true
+                }
+            ]
+        },
+        "REJECTED/original_0408.jpg": {
+            "image": "REJECTED/original_0408.jpg",
+            "source_class": "REJECTED",
+            "width": 1920,
+            "height": 1080,
+            "reviewed": true,
+            "pallets": [
+                {
+                    "bbox": [
+                        732,
+                        265,
+                        887,
+                        389
+                    ],
+                    "class": "REJECTED",
+                    "object_present": true,
+                    "x_mark_visible": true
+                },
+                {
+                    "bbox": [
+                        195,
+                        357,
+                        366,
+                        492
+                    ],
+                    "class": "REJECTED",
+                    "object_present": true,
+                    "x_mark_visible": true
+                },
+                {
+                    "bbox": [
+                        326,
+                        595,
+                        515,
+                        727
+                    ],
+                    "class": "REJECTED",
+                    "object_present": true,
+                    "x_mark_visible": true
+                },
+                {
+                    "bbox": [
+                        865,
+                        599,
+                        1053,
+                        749
+                    ],
+                    "class": "REJECTED",
+                    "object_present": true,
+                    "x_mark_visible": true
+                },
+                {
+                    "bbox": [
+                        1236,
+                        593,
+                        1440,
+                        733
+                    ],
+                    "class": "REJECTED",
+                    "object_present": true,
+                    "x_mark_visible": true
+                },
+                {
+                    "bbox": [
+                        1370,
+                        260,
+                        1553,
+                        375
+                    ],
+                    "class": "REJECTED",
+                    "object_present": true,
+                    "x_mark_visible": true
+                }
+            ]
+        },
+        "REJECTED/original_0289.jpg": {
+            "image": "REJECTED/original_0289.jpg",
+            "source_class": "REJECTED",
+            "width": 1920,
+            "height": 1080,
+            "reviewed": true,
+            "pallets": [
+                {
+                    "bbox": [
+                        584,
+                        262,
+                        849,
+                        422
+                    ],
+                    "class": "REJECTED",
+                    "object_present": true,
+                    "x_mark_visible": true
+                },
+                {
+                    "bbox": [
+                        163,
+                        408,
+                        329,
+                        600
+                    ],
+                    "class": "REJECTED",
+                    "object_present": true,
+                    "x_mark_visible": true
+                },
+                {
+                    "bbox": [
+                        588,
+                        599,
+                        800,
+                        724
+                    ],
+                    "class": "REJECTED",
+                    "object_present": true,
+                    "x_mark_visible": true
+                },
+                {
+                    "bbox": [
+                        1172,
+                        595,
+                        1382,
+                        742
+                    ],
+                    "class": "REJECTED",
+                    "object_present": true,
+                    "x_mark_visible": true
+                },
+                {
+                    "bbox": [
+                        1642,
+                        433,
+                        1807,
+                        634
+                    ],
+                    "class": "REJECTED",
+                    "object_present": true,
+                    "x_mark_visible": true
+                },
+                {
+                    "bbox": [
+                        1468,
+                        230,
+                        1649,
+                        408
+                    ],
+                    "class": "REJECTED",
+                    "object_present": true,
+                    "x_mark_visible": true
+                }
+            ]
+        },
+        "REJECTED/original_0199.jpg": {
+            "image": "REJECTED/original_0199.jpg",
+            "source_class": "REJECTED",
+            "width": 1920,
+            "height": 1080,
+            "reviewed": true,
+            "pallets": [
+                {
+                    "bbox": [
+                        658,
+                        244,
+                        826,
+                        396
+                    ],
+                    "class": "REJECTED",
+                    "object_present": true,
+                    "x_mark_visible": true
+                },
+                {
+                    "bbox": [
+                        188,
+                        351,
+                        378,
+                        488
+                    ],
+                    "class": "REJECTED",
+                    "object_present": true,
+                    "x_mark_visible": true
+                },
+                {
+                    "bbox": [
+                        342,
+                        604,
+                        525,
+                        735
+                    ],
+                    "class": "REJECTED",
+                    "object_present": true,
+                    "x_mark_visible": true
+                },
+                {
+                    "bbox": [
+                        753,
+                        588,
+                        950,
+                        737
+                    ],
+                    "class": "REJECTED",
+                    "object_present": true,
+                    "x_mark_visible": true
+                },
+                {
+                    "bbox": [
+                        1635,
+                        425,
+                        1809,
+                        645
+                    ],
+                    "class": "REJECTED",
+                    "object_present": true,
+                    "x_mark_visible": true
+                },
+                {
+                    "bbox": [
+                        1268,
+                        244,
+                        1460,
+                        390
+                    ],
+                    "class": "REJECTED",
+                    "object_present": true,
+                    "x_mark_visible": true
+                }
+            ]
+        }
+    }
+}
