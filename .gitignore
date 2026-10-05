@@ -1,4 +1,4 @@
-﻿# =========================
+# =========================
 # Python
 # =========================
 __pycache__/
@@ -64,3 +64,7 @@ desktop.ini
 07_Final_Empty_Accepted_Rejected_System/CODE/*.py
 !07_Final_Empty_Accepted_Rejected_System/CODE/27_live_fast_new_object_final.py
 !07_Final_Empty_Accepted_Rejected_System/CODE/dynamic_live_pallet_detection.py
+!07_Final_Empty_Accepted_Rejected_System/CODE/29_live_phase27_rfid_fusion.py
+!07_Final_Empty_Accepted_Rejected_System/CODE/crest_rfid_fusion.py
+!07_Final_Empty_Accepted_Rejected_System/CODE/test_crest_rfid_fusion.py
+!07_Final_Empty_Accepted_Rejected_System/CODE/analyze_rfid_fusion_log.py
