@@ -158,7 +158,10 @@ class FusionConfig:
     # --- station passage geometry -----------------------------------
     boundary_hysteresis_px: float = 8.0     # "clearly outside/inside" band half-width
     y_margin_px: float = 25.0               # lane gate margin around station y range
-    lane_gate_mode: str = "center"          # "center" | "overlap" | "both"
+    # The calibrated box marks the RFID sensor, which sits beside the track, so the
+    # pallet CENTRE is ~80-100 px away from the box centre.  "overlap" = the pallet
+    # box touches the station's vertical band (+margin); "center" = centre inside it.
+    lane_gate_mode: str = "overlap"         # "overlap" | "center" | "both"
     entry_marker_max_age_sec: float = 2.0   # "was clearly outside" memory
     passage_timeout_sec: float = 4.0        # force-close a passage that never exits
     passage_retention_sec: float = 1.5      # keep EXITED passages matchable this long
@@ -192,6 +195,8 @@ class FusionConfig:
 class EventLog:
     """Non-blocking structured log: JSONL writer thread + bounded memory ring."""
 
+    ALWAYS_ECHO = ("STATION_LANE_MISS", "STATION_NO_ENTRY")
+
     def __init__(
         self,
         path: Optional[str] = None,
@@ -218,7 +223,11 @@ class EventLog:
         self.records.append(rec)
         if self._thread is not None:
             self._q.put(rec)
-        if self.echo and (self.echo_events is None or event in self.echo_events):
+        if self.echo and (
+            self.echo_events is None
+            or event in self.echo_events
+            or event in self.ALWAYS_ECHO
+        ):
             print("[FUSION] " + event + " " + " ".join(f"{k}={v}" for k, v in rec.items() if k != "event"))
 
     def events(self, name: str) -> List[dict]:
@@ -878,6 +887,31 @@ class FusionIdentityManager:
             u = st.sign * cx
             lane = self._lane_ok(traj.box, st)
             passage = traj.passages.get(st.name)
+
+            # --- explain a pallet that is level with a station but opened no passage ---
+            in_station_x = st.entry_u <= u <= st.exit_u
+            note = traj.station_state[st.name]
+
+            if not in_station_x:
+                note["lane_noted"] = False
+                note["entry_noted"] = False
+            elif passage is None:
+                if not lane and not note.get("lane_noted"):
+                    note["lane_noted"] = True
+                    self.log.log(
+                        "STATION_LANE_MISS", t=now, station=st.name, track_id=traj.track_id,
+                        box_y=[round(traj.box[1]), round(traj.box[3])],
+                        station_y=[st.y_min, st.y_max], margin=self.cfg.y_margin_px,
+                        note="pallet is level with the station but outside its vertical band",
+                    )
+                elif lane and note["outside_t"] is None and not note.get("entry_noted"):
+                    note["entry_noted"] = True
+                    self.log.log(
+                        "STATION_NO_ENTRY", t=now, station=st.name, track_id=traj.track_id,
+                        center=_pt(traj.center), direction=st.direction,
+                        note="inside the station without entering from its valid side "
+                             "(moving the other way, or first seen inside)",
+                    )
 
             if passage is None:
                 if not lane:

@@ -588,6 +588,48 @@ def test_late_bridge_hint_never_overrides_a_numbered_pallet():
     sim.run(T0 + 5.0, tracks)
     assert phys(sim, 80) == 5
 
+def test_pallets_that_travel_beside_the_sensor_box_still_get_their_number():
+    """From the real screenshot: pallet boxes are ~114 px tall, centred at y~540 (top lane) and
+    y~873 (bottom lane) while the RFID boxes are centred at y=626 / y=775 (the sensors sit beside the track)."""
+    for mode, expect_ok in (("overlap", True), ("center", False)):
+        sim = Sim(lane_gate_mode=mode, rfid_pre_margin_sec=1.5, rfid_post_margin_sec=1.0,
+                  pending_hold_sec=2.5, ambiguity_hold_sec=2.5, event_max_age_sec=5.0)
+        sim.rfid_at(center_time_rfid1(T0) - 0.5, "RFID1", 3)
+        sim.run(T0 + 3.0, lambda t: [make_track(41, rfid1_x(t, T0), 540.0, w=170, h=114)])
+        start = sim.t
+        sim.rfid_at(center_time_rfid2(start) - 0.2, "RFID2", 5)
+        sim.run(start + 3.0, lambda t: [make_track(52, rfid2_x(t, start), 873.0, w=200, h=150)])
+        passages = len(sim.f.log.events("PASSAGE_OPEN"))
+        ids = [(a["track_id"], a["physical_id"]) for a in sim.f.log.events("IDENTITY_ASSIGN")]
+        print(f"   gate={mode:8s}: passages opened={passages}  numbers assigned (track, pallet)={ids}")
+        if expect_ok:
+            assert ids == [(41, 3), (52, 5)], ids
+        else:
+            assert passages == 0 and ids == [], "the old centre gate rejects these pallets"
+
+
+def test_console_explains_why_no_passage_opened():
+    import contextlib, io
+    sim = Sim()
+    sim.f.log.echo = True
+    sim.f.log.echo_events = {"PASSAGE_OPEN"}          # stage-35 style filter: diagnostics must still show
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        # (a) pallet far above the station band, crossing its x range
+        sim.run(T0 + 3.0, lambda t: [make_track(60, rfid1_x(t, T0), 300.0, w=170, h=114)])
+        # (b) pallet on the right lane but moving the WRONG way (left -> right) on the top conveyor
+        start = sim.t
+        sim.run(start + 3.0, lambda t: [make_track(61, 1000.0 + SPEED * (t - start), 540.0, w=170, h=114)])
+        # (c) pallet that is first seen already inside the station
+        start2 = sim.t
+        sim.run(start2 + 1.0, lambda t: [make_track(62, 1150.0 - SPEED * (t - start2) * 0.3, 540.0, w=170, h=114)])
+    out = buf.getvalue()
+    print("   console:", [l[:80] for l in out.strip().splitlines()])
+    assert "STATION_LANE_MISS" in out and "STATION_NO_ENTRY" in out
+    assert out.count("STATION_LANE_MISS") == 1, "once per pass, no spam"
+    assert sim.f.log.events("PASSAGE_OPEN") == []
+
+
 def test_observed_hardware_timing_matches_with_stage34_windows():
     """From the real reader check: RFID1 tag appears ~0.67 s before the pallet is level with the
     box (1.34 s dwell), RFID2 ~0.21 s before (0.42 s dwell); pallets arrive ~3.3 s apart."""
