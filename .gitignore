@@ -74,3 +74,6 @@ desktop.ini
 !07_Final_Empty_Accepted_Rejected_System/CODE/make_31_from_30.py
 !07_Final_Empty_Accepted_Rejected_System/CODE/31_live_full_conveyor_consistency_test.py
 !07_Final_Empty_Accepted_Rejected_System/CODE/test_phase31_hold_decision.py
+!07_Final_Empty_Accepted_Rejected_System/CODE/make_32_from_31.py
+!07_Final_Empty_Accepted_Rejected_System/CODE/32_live_full_conveyor_consistency_test.py
+!07_Final_Empty_Accepted_Rejected_System/CODE/test_phase32_held_box_logic.py
