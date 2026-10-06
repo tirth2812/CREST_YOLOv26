@@ -1272,24 +1272,18 @@ class FusionIdentityManager:
     # DEBUG OVERLAY (cv2 imported lazily)
     # ----------------------------------------------------------
 
-    def draw_debug(self, image, now: float, labels: bool = True):
+    STATION_BOX_COLOR = (255, 0, 255)   # one colour, plain rectangle
+
+    def draw_debug(self, image, now: float, labels: bool = False):
+        """
+        Draws each RFID station as ONE plain rectangle (no lines, no text).
+        labels=True additionally prints the open-passage status lines (debug only).
+        """
         import cv2
 
         for st in self.stations:
             x1, y1, x2, y2 = st.box
-            cv2.rectangle(image, (x1, y1), (x2, y2), (255, 0, 255), 2)
-            cv2.line(image, (int(st.entry_x), y1 - 12), (int(st.entry_x), y2 + 12), (0, 255, 0), 3)
-            cv2.line(image, (int(st.exit_x), y1 - 12), (int(st.exit_x), y2 + 12), (0, 0, 255), 3)
-            if not labels:
-                continue
-
-            entry_side = "RIGHT" if st.direction == "RIGHT_TO_LEFT" else "LEFT"
-            exit_side = "LEFT" if st.direction == "RIGHT_TO_LEFT" else "RIGHT"
-            cv2.putText(image, f"{st.name} ENTRY {entry_side} (green) EXIT {exit_side} (red)",
-                        (x1 - 60, y1 - 22), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), 2)
-            offset = self.timing_offset(st.name)
-            cv2.putText(image, f"offset={offset * 1000:+.0f}ms",
-                        (x1 - 60, y2 + 32), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), 2)
+            cv2.rectangle(image, (x1, y1), (x2, y2), self.STATION_BOX_COLOR, 2)
 
         if not labels:
             return
