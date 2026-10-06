@@ -128,6 +128,10 @@ once('''        # [P34] station boxes + entry(green)/exit(red) lines (text only 
         )
 ''', "simple overlay")
 
+once('''            log_echo=not FINAL_LABELS,
+''', '''            log_echo=True,  # [P35] keep the RFID / identity event lines in the console
+''', "console events")
+
 if problems:
     print("NOTHING WAS WRITTEN. Your 34 file differs from the one this script expects:")
     for problem in problems:

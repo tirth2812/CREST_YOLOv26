@@ -3379,7 +3379,7 @@ def main():
     FUSION = fusion_module.FusionIdentityManager(
         config=fusion_module.FusionConfig(
             log_path=str(RFID_LOG_FILE),
-            log_echo=not FINAL_LABELS,
+            log_echo=True,  # [P35] keep the RFID / identity event lines in the console
             log_echo_events=RFID_CONSOLE_EVENTS,
             **RFID_TIMING,
         ),

@@ -74,6 +74,7 @@ def test_pallet_labels_are_number_and_state_only():
 def test_resolution_check_present_and_vision_untouched():
     src = (HERE / "35_live_rfid_identity_mapping_test.py").read_text(encoding="utf-8-sig")
     assert "rfid_frame_size = None" in src and "will NOT line up" in src
+    assert "log_echo=True,  # [P35]" in src and "log_echo=not FINAL_LABELS" not in src
     a = (HERE / "34_live_rfid_identity_mapping_test.py").read_text(encoding="utf-8-sig").splitlines()
     b = set((HERE / "35_live_rfid_identity_mapping_test.py").read_text(encoding="utf-8-sig").splitlines())
     removed = [l.strip() for l in a if l.strip() and l not in b]
