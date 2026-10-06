@@ -174,9 +174,14 @@ class FusionConfig:
     reacquire_direction_tol_px: float = 10.0
     reacquire_unique_margin: float = 0.25   # normalised cost margin vs. runner-up
     bridge_hint_max_distance_px: float = 160.0
+    # A lost trajectory (with its physical id) is kept this long so the Phase 27
+    # state bridge can still hand it to a new tracker id.  Only the bridge hint
+    # may re-link after track_coast_sec; the layer's own motion matching may not.
+    bridge_hint_coast_sec: float = 2.0
 
     # --- logging ----------------------------------------------------
     log_echo: bool = True
+    log_echo_events: Optional[tuple] = None   # None = print every event; else only these
     log_path: Optional[str] = None
 
 
@@ -187,9 +192,16 @@ class FusionConfig:
 class EventLog:
     """Non-blocking structured log: JSONL writer thread + bounded memory ring."""
 
-    def __init__(self, path: Optional[str] = None, echo: bool = True, keep: int = 5000):
+    def __init__(
+        self,
+        path: Optional[str] = None,
+        echo: bool = True,
+        keep: int = 5000,
+        echo_events: Optional[tuple] = None,
+    ):
         self.records: deque = deque(maxlen=keep)
         self.echo = echo
+        self.echo_events = set(echo_events) if echo_events else None
         self._q: "queue.Queue" = queue.Queue()
         self._thread = None
         self._path = path
@@ -206,7 +218,7 @@ class EventLog:
         self.records.append(rec)
         if self._thread is not None:
             self._q.put(rec)
-        if self.echo:
+        if self.echo and (self.echo_events is None or event in self.echo_events):
             print("[FUSION] " + event + " " + " ".join(f"{k}={v}" for k, v in rec.items() if k != "event"))
 
     def events(self, name: str) -> List[dict]:
@@ -518,7 +530,11 @@ class FusionIdentityManager:
             StationConfig.from_dict(name, data) for name, data in station_dict.items()
         ]
         self.station_by_name = {s.name: s for s in self.stations}
-        self.log = log or EventLog(path=self.cfg.log_path, echo=self.cfg.log_echo)
+        self.log = log or EventLog(
+            path=self.cfg.log_path,
+            echo=self.cfg.log_echo,
+            echo_events=self.cfg.log_echo_events,
+        )
 
         self.event_queue: "queue.Queue" = queue.Queue()
         self.registry: Dict[int, PhysicalPallet] = {p: PhysicalPallet(p) for p in physical_ids}
@@ -665,16 +681,39 @@ class FusionIdentityManager:
         hints, self._bridge_hints = self._bridge_hints, []
         for old_id, new_id in hints:
             traj = self.track_to_traj.get(old_id)
-            if traj is None:
+            if traj is None or new_id not in current:
                 continue
-            if new_id in self.track_to_traj or new_id not in current:
+            existing = self.track_to_traj.get(new_id)
+            if existing is traj:
                 continue
-            dx = box_center(current[new_id])[0] - traj.center[0]
-            dy = box_center(current[new_id])[1] - traj.center[1]
-            if math.hypot(dx, dy) > self.cfg.bridge_hint_max_distance_px:
+            if existing is not None:
+                # The Phase 27 bridge may hand the old state over a few frames AFTER
+                # the new id appeared (it can retry while the id is young).  Only a
+                # young trajectory that has no physical number yet may be taken over.
+                if (
+                    existing.physical_id is not None
+                    or now - existing.first_seen > self.cfg.bridge_hint_coast_sec
+                ):
+                    self.log.log(
+                        "BRIDGE_HINT_REJECTED", t=now, old_track=old_id, new_track=new_id,
+                        reason="new id already owns an identity or is established",
+                    )
+                    continue
+                self._kill_trajectory(existing, now, "merged_into_bridged_trajectory")
+            new_center = box_center(current[new_id])
+            gap = max(0.0, min(now - traj.last_seen, self.cfg.bridge_hint_coast_sec))
+            predicted = (
+                traj.center[0] + traj.velocity[0] * gap,
+                traj.center[1] + traj.velocity[1] * gap,
+            )
+            distance = min(
+                math.hypot(new_center[0] - traj.center[0], new_center[1] - traj.center[1]),
+                math.hypot(new_center[0] - predicted[0], new_center[1] - predicted[1]),
+            )
+            if distance > self.cfg.bridge_hint_max_distance_px:
                 self.log.log(
                     "BRIDGE_HINT_REJECTED", t=now, old_track=old_id, new_track=new_id,
-                    distance=math.hypot(dx, dy),
+                    distance=distance,
                 )
                 continue
             if traj.state == "COASTING":
@@ -792,7 +831,8 @@ class FusionIdentityManager:
         for traj in list(self.trajectories.values()):
             if traj.state != "COASTING":
                 continue
-            if now - traj.last_seen > self._coast_limit(traj):
+            keep = max(self._coast_limit(traj), self.cfg.bridge_hint_coast_sec)
+            if now - traj.last_seen > keep:
                 self._kill_trajectory(traj, now, "coast_timeout")
 
     def _kill_trajectory(self, traj: Trajectory, now: float, reason: str):
@@ -1232,7 +1272,7 @@ class FusionIdentityManager:
     # DEBUG OVERLAY (cv2 imported lazily)
     # ----------------------------------------------------------
 
-    def draw_debug(self, image, now: float):
+    def draw_debug(self, image, now: float, labels: bool = True):
         import cv2
 
         for st in self.stations:
@@ -1240,6 +1280,9 @@ class FusionIdentityManager:
             cv2.rectangle(image, (x1, y1), (x2, y2), (255, 0, 255), 2)
             cv2.line(image, (int(st.entry_x), y1 - 12), (int(st.entry_x), y2 + 12), (0, 255, 0), 3)
             cv2.line(image, (int(st.exit_x), y1 - 12), (int(st.exit_x), y2 + 12), (0, 0, 255), 3)
+            if not labels:
+                continue
+
             entry_side = "RIGHT" if st.direction == "RIGHT_TO_LEFT" else "LEFT"
             exit_side = "LEFT" if st.direction == "RIGHT_TO_LEFT" else "RIGHT"
             cv2.putText(image, f"{st.name} ENTRY {entry_side} (green) EXIT {exit_side} (red)",
@@ -1247,6 +1290,9 @@ class FusionIdentityManager:
             offset = self.timing_offset(st.name)
             cv2.putText(image, f"offset={offset * 1000:+.0f}ms",
                         (x1 - 60, y2 + 32), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), 2)
+
+        if not labels:
+            return
 
         y = 300
         for passage in self.active_passages:

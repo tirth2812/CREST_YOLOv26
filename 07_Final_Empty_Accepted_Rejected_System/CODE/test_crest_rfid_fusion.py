@@ -234,7 +234,8 @@ def test_scenario5_removed_pallet_is_unbound_and_not_inherited():
 def test_scenario6_reinsertion_unknown_until_rfid():
     sim = Sim()
     sim.rfid_at(center_time_rfid1(T0), "RFID1", 3)
-    sim.run(T0 + 5.0, lambda t: [make_track(57, rfid1_x(t, T0), RFID1_Y)] if rfid1_x(t, T0) > 900 else [])
+    # pallet removed at x<900 (~T0+3.3); it coasts up to bridge_hint_coast_sec (2 s) before unbinding
+    sim.run(T0 + 6.0, lambda t: [make_track(57, rfid1_x(t, T0), RFID1_Y)] if rfid1_x(t, T0) > 900 else [])
     # pallet 3 reinserted at an arbitrary place on the bottom lane, outside RFID2
     t_start = sim.t
     assert sim.f.registry[3].visibility_state == "NOT_VISIBLE"
@@ -514,6 +515,120 @@ def test_station_geometry_validation():
         return
     raise AssertionError("inconsistent entry/exit must be rejected")
 
+
+
+
+def test_identity_survives_a_long_gap_when_the_phase27_bridge_hands_over():
+    """Vision state is bridged for up to 2 s; the physical number must travel with it."""
+    for hinted in (True, False):
+        sim = Sim()
+        sim.rfid_at(center_time_rfid1(T0), "RFID1", 3)
+        gap_start = {}
+
+        def tracks(t):
+            x = rfid1_x(t, T0)
+            if x > 900:
+                return [make_track(57, x, RFID1_Y)]
+            gap_start.setdefault("t", t)
+            if t - gap_start["t"] < 1.4:                       # blind for 1.4 s
+                return []
+            if hinted and not gap_start.get("hinted"):
+                gap_start["hinted"] = True
+                sim.f.notify_bridge(57, 92)                    # Phase 27 bridge fired
+            return [make_track(92, x, RFID1_Y)]
+
+        sim.run(T0 + 6.0, tracks)
+        if hinted:
+            assert phys(sim, 92) == 3, "identity must follow the Phase 27 bridge"
+            assert sim.f.registry[3].visibility_state == "ACTIVE"
+        else:
+            assert phys(sim, 92) is None, "without the bridge a long gap must NOT guess"
+
+
+def test_late_bridge_hint_takes_over_a_young_unnumbered_trajectory():
+    """Phase 31 lets the vision bridge retry, so the hint can arrive after the new id appeared."""
+    sim = Sim()
+    sim.rfid_at(center_time_rfid1(T0), "RFID1", 3)
+    state = {"hint_at": None}
+
+    def tracks(t):
+        x = rfid1_x(t, T0)
+        if x > 900:
+            return [make_track(57, x, RFID1_Y)]
+        state.setdefault("t0", t)
+        if t - state["t0"] < 0.3:
+            return []
+        state.setdefault("new_seen", t)
+        if t - state["new_seen"] >= 0.15 and state["hint_at"] is None:     # bridge succeeds 5 frames later
+            state["hint_at"] = t
+            sim.f.notify_bridge(57, 92)
+        return [make_track(92, x, RFID1_Y)]
+
+    sim.run(T0 + 6.0, tracks)
+    assert phys(sim, 92) == 3
+    assert len(sim.f.trajectories) == 1, "the young duplicate trajectory must be merged away"
+
+
+def test_late_bridge_hint_never_overrides_a_numbered_pallet():
+    sim = Sim()
+    sim.rfid_at(center_time_rfid1(T0), "RFID1", 3)
+    sim.rfid_at(center_time_rfid2(T0), "RFID2", 5)
+
+    def tracks(t):
+        out = []
+        x = rfid1_x(t, T0)
+        if x > 900:
+            out.append(make_track(57, x, RFID1_Y))
+        out.append(make_track(80, rfid2_x(t, T0), RFID2_Y))       # a different, numbered pallet
+        if t > T0 + 4.0 and x <= 900 and not getattr(sim, "hinted", False):
+            sim.hinted = True
+            sim.f.notify_bridge(57, 80)                            # wrong hint: 80 is established
+        return out
+
+    sim.run(T0 + 5.0, tracks)
+    assert phys(sim, 80) == 5
+
+def test_observed_hardware_timing_matches_with_stage34_windows():
+    """From the real reader check: RFID1 tag appears ~0.67 s before the pallet is level with the
+    box (1.34 s dwell), RFID2 ~0.21 s before (0.42 s dwell); pallets arrive ~3.3 s apart."""
+    stage34 = dict(rfid_pre_margin_sec=1.5, rfid_post_margin_sec=1.0, pending_hold_sec=2.5,
+                   ambiguity_hold_sec=2.5, event_max_age_sec=5.0)
+    cycle = [3, 4, 2, 5, 6, 1]
+    for config, label in ((stage34, "stage-34 windows"), ({}, "default windows")):
+        sim = Sim(**config)
+        matched = 0
+        for k in range(12):
+            station = "RFID1" if k % 2 == 0 else "RFID2"
+            pallet = cycle[k % 6]
+            start = sim.t
+            if station == "RFID1":
+                center = center_time_rfid1(start)
+                sim.rfid_at(center - 0.67, station, pallet)
+                sim.run(start + 3.3, lambda t, s=start, tid=300 + k: [make_track(tid, rfid1_x(t, s), RFID1_Y)])
+            else:
+                center = center_time_rfid2(start)
+                sim.rfid_at(center - 0.21, station, pallet)
+                sim.run(start + 3.3, lambda t, s=start, tid=300 + k: [make_track(tid, rfid2_x(t, s), RFID2_Y)])
+        matched = len(sim.f.log.events("IDENTITY_ASSIGN"))
+        wrong = [a for a in sim.f.log.events("IDENTITY_ASSIGN")
+                 if a["physical_id"] != cycle[(a["track_id"] - 300) % 6]]
+        print(f"   {label}: {matched}/12 identities assigned, wrong={len(wrong)}")
+        assert not wrong
+        if label == "stage-34 windows":
+            assert matched == 12
+        else:
+            assert matched < 12, "the old 0.25 s windows should miss RFID1's early reads"
+
+
+def test_console_echo_can_be_limited_to_chosen_events():
+    import contextlib, io
+    log = fusion_mod.EventLog(echo=True, echo_events=("PASSAGE_OPEN",))
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        log.log("TRACK_APPEARED", track_id=1)
+        log.log("PASSAGE_OPEN", station="RFID1")
+    assert "PASSAGE_OPEN" in buf.getvalue() and "TRACK_APPEARED" not in buf.getvalue()
+    assert len(log.records) == 2          # nothing is lost from the log itself
 
 
 # =====================================================================
