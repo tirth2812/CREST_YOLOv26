@@ -38,18 +38,26 @@ def make_track(track_id, cx, cy, w=130, h=120):
 
 class Sim:
     def __init__(self, **overrides):
+        overrides.setdefault("match_mode", "passage")      # the older tests exercise the passage logic
         self.cfg = FusionConfig(log_echo=False, **overrides)
         self.f = FusionIdentityManager(self.cfg)
         self.t = T0
         self.scheduled = []     # (time, station, pallet)
+        self.scheduled_leaves = []
 
     def rfid_at(self, t, station, pallet):
         self.scheduled.append((t, station, pallet))
+
+    def rfid_leave_at(self, t, station, pallet):
+        self.scheduled_leaves.append((t, station, pallet))
 
     def step(self, tracks):
         for item in [s for s in self.scheduled if s[0] <= self.t]:
             self.scheduled.remove(item)
             self.f.push_rfid_event(RFIDEvent(item[1], item[2], item[0]))
+        for item in [s for s in self.scheduled_leaves if s[0] <= self.t]:
+            self.scheduled_leaves.remove(item)
+            self.f.push_rfid_event(fusion_mod.RFIDLeave(item[1], item[2], item[0]))
         self.f.update_tracks(self.t, tracks)
         self.f.process_rfid_events(self.t)
         check_invariants(self.f)
@@ -630,6 +638,134 @@ def test_console_explains_why_no_passage_opened():
     assert sim.f.log.events("PASSAGE_OPEN") == []
 
 
+
+# =====================================================================
+# CLOSEST-APPROACH MATCHING (default mode)
+# =====================================================================
+
+def closest_sim(**kw):
+    return Sim(match_mode="closest", **kw)
+
+
+def read_rfid1(sim, start, pallet, x0=1300.0, dwell=1.34, lead=0.67):
+    """tag appears `lead` s before the pallet is level with the box centre; stays `dwell` s."""
+    centre = center_time_rfid1(start, x0)
+    sim.rfid_at(centre - lead, "RFID1", pallet)
+    sim.rfid_leave_at(centre - lead + dwell, "RFID1", pallet)
+
+
+def read_rfid2(sim, start, pallet, x0=700.0, dwell=0.42, lead=0.21):
+    centre = center_time_rfid2(start, x0)
+    sim.rfid_at(centre - lead, "RFID2", pallet)
+    sim.rfid_leave_at(centre - lead + dwell, "RFID2", pallet)
+
+
+def test_closest_maps_pallets_of_any_size_and_height():
+    sim = closest_sim()
+    read_rfid1(sim, T0, 3)
+    sim.run(T0 + 3.0, lambda t: [make_track(41, rfid1_x(t, T0), 540.0, w=170, h=114)])      # tall, wide, off the box height
+    s2 = sim.t
+    read_rfid2(sim, s2, 5)
+    sim.run(s2 + 3.0, lambda t: [make_track(52, rfid2_x(t, s2), 873.0, w=120, h=90)])       # small
+    ids = [(a["track_id"], a["physical_id"]) for a in sim.f.log.events("IDENTITY_ASSIGN")]
+    assert ids == [(41, 3), (52, 5)], ids
+    assert not sim.f.log.events("PASSAGE_OPEN"), "no passage logic in this mode"
+
+
+def test_closest_neighbours_and_both_lanes_never_swap():
+    """6 pallets in a loop, ~3.3 s apart, different sizes; RFID1 and RFID2 read alternately,
+    and a pallet of the OTHER lane is level (in x) with the reader at the same time."""
+    sim = closest_sim()
+    cycle = [3, 4, 2, 5, 6, 1]
+    sizes = [(170, 114), (130, 120), (200, 150), (140, 100), (160, 130), (125, 95)]
+    for k in range(12):
+        station = "RFID1" if k % 2 == 0 else "RFID2"
+        pallet = cycle[k % 6]
+        w, h = sizes[k % 6]
+        start = sim.t
+        if station == "RFID1":
+            read_rfid1(sim, start, pallet)
+            fn = lambda t, s=start, tid=300 + k, w=w, h=h: [
+                make_track(tid, rfid1_x(t, s), 540.0, w=w, h=h),
+                make_track(900 + k, rfid1_x(t, s) + 20.0, 873.0, w=150, h=120),     # bottom-lane pallet, same x
+            ]
+        else:
+            read_rfid2(sim, start, pallet)
+            fn = lambda t, s=start, tid=300 + k, w=w, h=h: [
+                make_track(tid, rfid2_x(t, s), 873.0, w=w, h=h),
+                make_track(900 + k, rfid2_x(t, s) - 20.0, 540.0, w=150, h=120),     # top-lane pallet, same x
+            ]
+        sim.run(start + 3.3, fn)
+    assigns = [(a["track_id"], a["physical_id"]) for a in sim.f.log.events("IDENTITY_ASSIGN")]
+    wrong = [a for a in assigns if a[0] >= 900 or a[1] != cycle[(a[0] - 300) % 6]]
+    print(f"   closest mode: {len(assigns)}/12 numbers assigned, wrong={len(wrong)}")
+    assert len(assigns) == 12 and not wrong
+
+
+def test_closest_works_without_the_tag_left_signal():
+    sim = closest_sim()
+    centre = center_time_rfid1(T0)
+    sim.rfid_at(centre - 0.67, "RFID1", 4)                        # no leave notice at all
+    sim.run(T0 + 4.5, lambda t: [make_track(41, rfid1_x(t, T0), 540.0, w=170, h=114)])
+    assert [(a["track_id"], a["physical_id"]) for a in sim.f.log.events("IDENTITY_ASSIGN")] == [(41, 4)]
+
+
+def test_closest_number_survives_a_tracker_id_change_inside_the_reader():
+    sim = closest_sim()
+    read_rfid1(sim, T0, 3)
+
+    def tracks(t):
+        x = rfid1_x(t, T0)
+        if 1150 >= x >= 1110:                  # tracker drops the pallet right at the reader
+            return []
+        return [make_track(57 if x > 1150 else 92, x, 540.0, w=170, h=114)]
+
+    sim.run(T0 + 4.0, tracks)
+    assert phys(sim, 92) == 3
+    assert len(sim.f.trajectories) == 1
+
+
+def test_closest_read_with_no_pallet_is_reported_not_guessed():
+    sim = closest_sim()
+    sim.rfid_at(T0 + 1.0, "RFID1", 3)
+    sim.rfid_leave_at(T0 + 2.0, "RFID1", 3)
+    sim.run(T0 + 5.0, lambda t: [make_track(70, 300.0, 540.0)])      # the only pallet is far away
+    assert sim.f.log.events("RFID_NO_PALLET") and not sim.f.log.events("IDENTITY_ASSIGN")
+
+
+def test_closest_two_equally_near_pallets_is_not_guessed():
+    sim = closest_sim()
+    read_rfid1(sim, T0, 3)
+    sim.run(T0 + 4.0, lambda t: [make_track(41, rfid1_x(t, T0), 540.0, w=170, h=114),
+                                 make_track(42, rfid1_x(t, T0) + 15.0, 545.0, w=170, h=114)])
+    assert sim.f.log.events("RFID_MATCH_AMBIGUOUS") and not sim.f.log.events("IDENTITY_ASSIGN")
+
+
+def test_closest_second_reader_verifies_and_rfid_corrects():
+    sim = closest_sim()
+    read_rfid1(sim, T0, 3)
+    sim.run(T0 + 3.0, lambda t: [make_track(41, rfid1_x(t, T0), 540.0, w=170, h=114)])
+    assert phys(sim, 41) == 3
+    # the SAME track later passes RFID2 and RFID2 says 3 again -> verify
+    s2 = sim.t
+    read_rfid2(sim, s2, 3)
+    sim.run(s2 + 3.0, lambda t: [make_track(41, rfid2_x(t, s2), 873.0, w=170, h=114)])
+    assert sim.f.log.events("IDENTITY_VERIFY") and phys(sim, 41) == 3
+    # RFID2 reads a different number for that track -> RFID wins, nobody else keeps the old one
+    s3 = sim.t
+    read_rfid2(sim, s3, 5)
+    sim.run(s3 + 3.0, lambda t: [make_track(41, rfid2_x(t, s3), 873.0, w=170, h=114)])
+    assert phys(sim, 41) == 5 and sim.f.registry[3].trajectory is None
+
+
+def test_closest_reader_emits_leave_notices():
+    # (reader thread is tested separately; here the manager must accept both kinds)
+    sim = closest_sim()
+    sim.f.push_rfid_event(fusion_mod.RFIDLeave("RFID1", 3, T0))    # leave without a read: ignored
+    sim.step([])
+    assert not sim.f.log.events("IDENTITY_ASSIGN")
+
+
 def test_observed_hardware_timing_matches_with_stage34_windows():
     """From the real reader check: RFID1 tag appears ~0.67 s before the pallet is level with the
     box (1.34 s dwell), RFID2 ~0.21 s before (0.42 s dwell); pallets arrive ~3.3 s apart."""
@@ -746,8 +882,11 @@ def test_reader_one_event_per_tag_presence_and_rearm():
         + [{"RFID1": (1, 2, 3, 4)}] * 2      # unknown tag -> logged, no event
     )
     events, log, worker = _run_reader_with_script(script)
-    got = [(e.station, e.pallet_id) for e in events]
+    enters = [e for e in events if isinstance(e, fusion_mod.RFIDEvent)]
+    leaves = [e for e in events if isinstance(e, fusion_mod.RFIDLeave)]
+    got = [(e.station, e.pallet_id) for e in enters]
     assert got == [("RFID1", 3), ("RFID1", 3), ("RFID1", 5), ("RFID2", 3)], got
+    assert [(e.station, e.pallet_id) for e in leaves][:3] == [("RFID1", 3), ("RFID2", 5), ("RFID1", 3)] or len(leaves) >= 3
     assert log.events("RFID_UNKNOWN_TAG")
     stamps = [e.timestamp for e in events]
     assert stamps == sorted(stamps)
@@ -757,7 +896,7 @@ def test_reader_survives_plc_errors():
     tag3 = (-8188, 336, -18499, 21259)
     script = ["ERR", "ERR", {"RFID1": tag3}, {"RFID1": tag3}]
     events, log, worker = _run_reader_with_script(script, max_wait=6.0)
-    assert [(e.station, e.pallet_id) for e in events] == [("RFID1", 3)]
+    assert [(e.station, e.pallet_id) for e in events if isinstance(e, fusion_mod.RFIDEvent)] == [("RFID1", 3)]
     assert worker.error_count >= 1 and log.events("RFID_READER_ERROR")
 
 

@@ -182,6 +182,20 @@ class FusionConfig:
     # may re-link after track_coast_sec; the layer's own motion matching may not.
     bridge_hint_coast_sec: float = 2.0
 
+    # --- RFID -> pallet matching ---------------------------------------
+    # "closest" (default): while a tag is in a reader's field a pallet is physically
+    # at that reader (a number is only reported when a tag is really there).  The
+    # number goes to the pallet whose centre came CLOSEST to the reader, measured
+    # along the conveyor (x) in that reader's lane, during the time the tag was
+    # read.  Pallet size / height do not matter.
+    # "passage": the older entry/exit state machine (kept for reference).
+    match_mode: str = "closest"
+    closest_pre_sec: float = 0.4            # look this far BEFORE the tag appeared
+    closest_post_sec: float = 0.4           # ... and this far AFTER it left
+    closest_max_dwell_sec: float = 2.0      # if the "tag left" signal never comes
+    closest_max_dx_px: float = 250.0        # nearest pallet must come at least this close
+    closest_ambiguity_px: float = 40.0      # two pallets this close to equally near = skip
+
     # --- logging ----------------------------------------------------
     log_echo: bool = True
     log_echo_events: Optional[tuple] = None   # None = print every event; else only these
@@ -195,7 +209,10 @@ class FusionConfig:
 class EventLog:
     """Non-blocking structured log: JSONL writer thread + bounded memory ring."""
 
-    ALWAYS_ECHO = ("STATION_LANE_MISS", "STATION_NO_ENTRY")
+    ALWAYS_ECHO = (
+        "STATION_LANE_MISS", "STATION_NO_ENTRY",
+        "RFID_CLOSEST_MATCH", "RFID_NO_PALLET", "RFID_MATCH_AMBIGUOUS",
+    )
 
     def __init__(
         self,
@@ -258,6 +275,14 @@ class RFIDEvent:
     pallet_id: int
     timestamp: float                     # time.monotonic() right after the PLC read returned
     raw: Tuple[int, ...] = ()
+
+
+@dataclass(frozen=True)
+class RFIDLeave:
+    """The tag left the reader field (NO_TAG or a different tag appeared)."""
+    station: str
+    pallet_id: int
+    timestamp: float
 
 
 class RFIDReaderWorker(threading.Thread):
@@ -358,6 +383,12 @@ class RFIDReaderWorker(threading.Thread):
         previous = self._last_value[station]
         self._last_value[station] = raw
 
+        # the previous tag left the field (gone, or replaced by another tag)
+        if previous != NO_TAG and raw != previous:
+            previous_pallet = RFID_MAP.get(previous)
+            if previous_pallet is not None:
+                self.out_queue.put(RFIDLeave(station=station, pallet_id=previous_pallet, timestamp=stamp))
+
         if raw == NO_TAG:
             return
 
@@ -455,6 +486,8 @@ class Trajectory:
         self.track_id_history: List[int] = [track_id]
         self.station_state = {s.name: {"pre": None, "outside_t": None} for s in stations}
         self.passages: Dict[str, "StationPassage"] = {}
+        self.history: deque = deque(maxlen=400)       # (time, centre_x, centre_y)
+        self.history.append((t, self.center[0], self.center[1]))
 
     def observe(self, box, t: float):
         new_center = box_center(box)
@@ -468,6 +501,7 @@ class Trajectory:
         self.box = tuple(box)
         self.center = new_center
         self.last_seen = t
+        self.history.append((t, new_center[0], new_center[1]))
 
 
 @dataclass
@@ -557,6 +591,7 @@ class FusionIdentityManager:
         self.recent_passages: deque = deque()
 
         self.pending: List[RFIDEvent] = []
+        self._reads: List[dict] = []              # closest-approach mode: {"event", "leave"}
         self._last_read: Dict[Tuple[str, int], float] = {}
         self._bridge_hints: List[Tuple[int, int]] = []
 
@@ -607,7 +642,7 @@ class FusionIdentityManager:
             "track_map": len(self.track_to_traj),
             "active_passages": len(self.active_passages),
             "recent_passages": len(self.recent_passages),
-            "pending_events": len(self.pending),
+            "pending_events": len(self.pending) + len(self._reads),
             "registry": {
                 p: (pal.visibility_state, pal.trajectory.id if pal.trajectory else None, pal.generation)
                 for p, pal in self.registry.items()
@@ -678,8 +713,9 @@ class FusionIdentityManager:
             )
             updated.append(traj)
 
-        for traj in updated:
-            self._update_stations(now, traj)
+        if self.cfg.match_mode == "passage":
+            for traj in updated:
+                self._update_stations(now, traj)
 
         self._expire_trajectories(now)
         self._maintain_passages(now)
@@ -1052,8 +1088,22 @@ class FusionIdentityManager:
                 event = self.event_queue.get_nowait()
             except queue.Empty:
                 break
-            self._ingest(event, now)
+            if isinstance(event, RFIDLeave):
+                self._ingest_leave(event)
+            else:
+                self._ingest(event, now)
         self._resolve_pending(now)
+
+    def _ingest_leave(self, leave: "RFIDLeave"):
+        for read in reversed(self._reads):
+            event = read["event"]
+            if (
+                read["leave"] is None
+                and event.station == leave.station
+                and event.pallet_id == leave.pallet_id
+            ):
+                read["leave"] = leave
+                return
 
     def _ingest(self, event: RFIDEvent, now: float):
         age = now - event.timestamp
@@ -1081,7 +1131,10 @@ class FusionIdentityManager:
                          physical_id=event.pallet_id, since_last=event.timestamp - last)
             return
 
-        self.pending.append(event)
+        if self.cfg.match_mode == "closest":
+            self._reads.append({"event": event, "leave": None})
+        else:
+            self.pending.append(event)
 
     def _candidate_passages(self, station: str, now: float) -> List[StationPassage]:
         result = [p for p in self.active_passages if p.station == station]
@@ -1118,7 +1171,96 @@ class FusionIdentityManager:
         reference = passage.center_time if passage.center_time is not None else passage.entry_time
         return distance + 0.1 * abs(t_adj - reference)
 
+    # ----------------------------------------------------------
+    # CLOSEST-APPROACH MATCHING (default)
+    # ----------------------------------------------------------
+
+    def _station_for_y(self, cy: float) -> str:
+        """Which reader's lane a point at height cy belongs to (nearest reader height)."""
+        return min(
+            self.stations,
+            key=lambda st: abs(cy - 0.5 * (st.box[1] + st.box[3])),
+        ).name
+
+    def _resolve_closest(self, now: float):
+        cfg = self.cfg
+
+        for read in list(self._reads):
+            event = read["event"]
+            leave = read["leave"]
+
+            if leave is None:
+                if now - event.timestamp < cfg.closest_max_dwell_sec:
+                    continue                                   # tag may still be in the field
+                end_time = event.timestamp + cfg.closest_max_dwell_sec
+            else:
+                end_time = leave.timestamp
+
+            end_time += cfg.closest_post_sec
+
+            # wait until the camera frames up to end_time have been processed
+            if self._vision_time < end_time and now - end_time < 1.0:
+                continue
+
+            self._reads.remove(read)
+            self._match_closest(event, event.timestamp - cfg.closest_pre_sec, end_time, now)
+
+    def _match_closest(self, event: RFIDEvent, start_time: float, end_time: float, now: float):
+        cfg = self.cfg
+        station = self.station_by_name[event.station]
+        station_x = 0.5 * (station.box[0] + station.box[2])
+
+        ranked = []
+        for traj in self.trajectories.values():
+            nearest = None
+            for t, cx, cy in traj.history:
+                if t < start_time or t > end_time:
+                    continue
+                if self._station_for_y(cy) != station.name:
+                    continue
+                distance = abs(cx - station_x)
+                if nearest is None or distance < nearest:
+                    nearest = distance
+            if nearest is not None:
+                ranked.append((nearest, traj))
+
+        ranked.sort(key=lambda item: item[0])
+
+        if not ranked or ranked[0][0] > cfg.closest_max_dx_px:
+            self.log.log(
+                "RFID_NO_PALLET", t=event.timestamp, station=event.station,
+                physical_id=event.pallet_id,
+                nearest_px=round(ranked[0][0]) if ranked else None,
+                note="a tag was read but no tracked pallet came near the reader",
+            )
+            return
+
+        best_distance, best = ranked[0]
+        if (
+            len(ranked) > 1
+            and ranked[1][0] <= cfg.closest_max_dx_px
+            and ranked[1][0] - best_distance < cfg.closest_ambiguity_px
+        ):
+            self.log.log(
+                "RFID_MATCH_AMBIGUOUS", t=event.timestamp, station=event.station,
+                physical_id=event.pallet_id, tracks=[ranked[0][1].track_id, ranked[1][1].track_id],
+                distances_px=[round(ranked[0][0]), round(ranked[1][0])],
+                action="left_unassigned",
+            )
+            return
+
+        self.log.log(
+            "RFID_CLOSEST_MATCH", t=event.timestamp, station=event.station,
+            physical_id=event.pallet_id, track_id=best.track_id, trajectory_id=best.id,
+            distance_px=round(best_distance), runner_up_px=round(ranked[1][0]) if len(ranked) > 1 else None,
+            resolve_latency=now - event.timestamp,
+        )
+        self._rfid_assign(best, event.pallet_id, event.timestamp, event.station, 0, now)
+
     def _resolve_pending(self, now: float):
+        if self.cfg.match_mode == "closest":
+            self._resolve_closest(now)
+            return
         if not self.pending:
             return
         cfg = self.cfg
