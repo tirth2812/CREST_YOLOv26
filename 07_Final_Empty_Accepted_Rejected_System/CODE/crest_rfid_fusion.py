@@ -195,6 +195,12 @@ class FusionConfig:
     closest_max_dwell_sec: float = 2.0      # if the "tag left" signal never comes
     closest_max_dx_px: float = 250.0        # nearest pallet must come at least this close
     closest_ambiguity_px: float = 40.0      # two pallets this close to equally near = skip
+    # How much LATER than the RFID read the pallet shows up in the camera timeline
+    # (camera + inference delay, antenna position).  Measured, not guessed: run with
+    # calibrate=True and ONE pallet; see calibration_summary().  {"RFID1": 0.9, ...}
+    vision_delay_sec: Optional[dict] = None
+    calibrate: bool = False                 # measure vision_delay_sec, assign nothing
+    calibration_search_sec: float = 5.0     # how far around the read to look for the pallet
 
     # --- logging ----------------------------------------------------
     log_echo: bool = True
@@ -212,6 +218,7 @@ class EventLog:
     ALWAYS_ECHO = (
         "STATION_LANE_MISS", "STATION_NO_ENTRY",
         "RFID_CLOSEST_MATCH", "RFID_NO_PALLET", "RFID_MATCH_AMBIGUOUS",
+        "RFID_CALIBRATION_SAMPLE", "RFID_CALIBRATION_SKIP",
     )
 
     def __init__(
@@ -407,6 +414,16 @@ class RFIDReaderWorker(threading.Thread):
 # SMALL GEOMETRY / MATH HELPERS
 # ============================================================
 
+def load_vision_delay(path) -> dict:
+    """{"RFID1": seconds, ...} from a calibration file, or {} if there is none."""
+    try:
+        with open(path, "r", encoding="utf-8-sig") as handle:
+            data = json.load(handle)
+        return {name: float(v["vision_delay_sec"]) for name, v in data.items()}
+    except Exception:
+        return {}
+
+
 def box_center(box) -> Tuple[float, float]:
     x1, y1, x2, y2 = box
     return (0.5 * (x1 + x2), 0.5 * (y1 + y2))
@@ -592,6 +609,7 @@ class FusionIdentityManager:
 
         self.pending: List[RFIDEvent] = []
         self._reads: List[dict] = []              # closest-approach mode: {"event", "leave"}
+        self._calibration: Dict[str, List[dict]] = {s.name: [] for s in self.stations}
         self._last_read: Dict[Tuple[str, int], float] = {}
         self._bridge_hints: List[Tuple[int, int]] = []
 
@@ -1175,6 +1193,97 @@ class FusionIdentityManager:
     # CLOSEST-APPROACH MATCHING (default)
     # ----------------------------------------------------------
 
+    def _delay(self, station: str) -> float:
+        return float((self.cfg.vision_delay_sec or {}).get(station, 0.0))
+
+    def _calibration_sample(self, event: "RFIDEvent", leave: Optional["RFIDLeave"], now: float):
+        """ONE pallet on the conveyor: measure when the camera sees it at the reader."""
+        cfg = self.cfg
+        station = self.station_by_name[event.station]
+        station_x = 0.5 * (station.box[0] + station.box[2])
+
+        if leave is None:
+            self.log.log("RFID_CALIBRATION_SKIP", station=event.station, reason="no 'tag left' signal")
+            return
+
+        start = event.timestamp - cfg.calibration_search_sec
+        end = leave.timestamp + cfg.calibration_search_sec
+
+        found = []
+        for traj in self.trajectories.values():
+            best = None
+            for t, cx, cy in traj.history:
+                if t < start or t > end or self._station_for_y(cy) != station.name:
+                    continue
+                d = abs(cx - station_x)
+                if best is None or d < best[0]:
+                    best = (d, t)
+            if best is not None and best[0] <= cfg.closest_max_dx_px:
+                found.append((best, traj))
+
+        if len(found) == 0:
+            self.log.log(
+                "RFID_CALIBRATION_SKIP", station=event.station, physical_id=event.pallet_id,
+                reason="NO pallet came near this reader in its lane within "
+                       f"+-{cfg.calibration_search_sec:.0f}s of the read: either the reader is on the OTHER "
+                       "lane than assumed (RFID1/RFID2 swapped), or the camera/RFID offset is bigger than "
+                       "the search window, or nothing was tracked there",
+            )
+            return
+
+        if len(found) > 1:
+            self.log.log(
+                "RFID_CALIBRATION_SKIP", station=event.station, physical_id=event.pallet_id,
+                reason=f"{len(found)} pallets near the reader - calibrate with exactly ONE pallet on the conveyor",
+            )
+            return
+
+        (distance, t_closest), traj = found[0]
+        middle = 0.5 * (event.timestamp + leave.timestamp)
+
+        x_when_tag_appeared = None
+        for t, cx, cy in traj.history:
+            if t >= event.timestamp:
+                x_when_tag_appeared = cx - station_x
+                break
+
+        sample = {
+            "delay_sec": t_closest - middle,
+            "dwell_sec": leave.timestamp - event.timestamp,
+            "closest_px": distance,
+            "x_when_tag_appeared_px": x_when_tag_appeared,
+        }
+        self._calibration[event.station].append(sample)
+        self.log.log(
+            "RFID_CALIBRATION_SAMPLE", station=event.station, physical_id=event.pallet_id,
+            track_id=traj.track_id, delay_sec=sample["delay_sec"], dwell_sec=sample["dwell_sec"],
+            closest_px=round(distance),
+            x_when_tag_appeared_px=None if x_when_tag_appeared is None else round(x_when_tag_appeared),
+            note="delay = when the camera saw the pallet at the reader, minus the middle of the tag read",
+        )
+
+    def calibration_summary(self) -> dict:
+        summary = {}
+        for name, samples in self._calibration.items():
+            if not samples:
+                continue
+            delays = sorted(x["delay_sec"] for x in samples)
+            summary[name] = {
+                "vision_delay_sec": round(delays[len(delays) // 2], 3),
+                "samples": len(delays),
+                "min": round(delays[0], 3),
+                "max": round(delays[-1], 3),
+                "dwell_sec": round(sorted(x["dwell_sec"] for x in samples)[len(samples) // 2], 3),
+            }
+        return summary
+
+    def write_calibration(self, path) -> dict:
+        summary = self.calibration_summary()
+        if summary:
+            with open(path, "w", encoding="utf-8") as handle:
+                json.dump(summary, handle, indent=2)
+        return summary
+
     def _station_for_y(self, cy: float) -> str:
         """Which reader's lane a point at height cy belongs to (nearest reader height)."""
         return min(
@@ -1196,14 +1305,27 @@ class FusionIdentityManager:
             else:
                 end_time = leave.timestamp
 
-            end_time += cfg.closest_post_sec
+            if cfg.calibrate:
+                end_time += cfg.calibration_search_sec
+            else:
+                end_time += cfg.closest_post_sec + self._delay(event.station)
 
             # wait until the camera frames up to end_time have been processed
             if self._vision_time < end_time and now - end_time < 1.0:
                 continue
 
             self._reads.remove(read)
-            self._match_closest(event, event.timestamp - cfg.closest_pre_sec, end_time, now)
+
+            if cfg.calibrate:
+                self._calibration_sample(event, leave, now)
+                continue
+
+            self._match_closest(
+                event,
+                event.timestamp - cfg.closest_pre_sec + self._delay(event.station),
+                end_time,
+                now,
+            )
 
     def _match_closest(self, event: RFIDEvent, start_time: float, end_time: float, now: float):
         cfg = self.cfg

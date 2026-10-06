@@ -766,6 +766,121 @@ def test_closest_reader_emits_leave_notices():
     assert not sim.f.log.events("IDENTITY_ASSIGN")
 
 
+
+# =====================================================================
+# CAMERA DELAY: measured by a one-pallet calibration, then used for matching
+# =====================================================================
+
+LATENCY = 2.2          # the camera timeline shows the world this much LATER than the RFID reads it
+
+
+def _world(vision_t, pallets, latency):
+    """tracks visible at vision time vision_t; pallets = [(lane, track_id, start_world_time, w, h)]"""
+    tracks = []
+    for lane, tid, start, w, h in pallets:
+        wt = vision_t - latency
+        if wt < start or wt > start + 9.0:
+            continue
+        x = 1500.0 - SPEED * (wt - start) if lane == 1 else 500.0 + SPEED * (wt - start)
+        tracks.append(make_track(tid, x, 540.0 if lane == 1 else 873.0, w=w, h=h))
+    return tracks
+
+
+def _schedule_reads(sim, pallets, numbers):
+    for lane, tid, start, w, h in pallets:
+        if lane == 1:
+            centre = start + (1500.0 - 1153.0) / SPEED
+            sim.rfid_at(centre - 0.67, "RFID1", numbers[tid])
+            sim.rfid_leave_at(centre + 0.67, "RFID1", numbers[tid])
+        else:
+            centre = start + (853.5 - 500.0) / SPEED
+            sim.rfid_at(centre - 0.21, "RFID2", numbers[tid])
+            sim.rfid_leave_at(centre + 0.21, "RFID2", numbers[tid])
+
+
+def _busy_loop(n=12):
+    pallets, numbers = [], {}
+    sizes = [(170, 114), (130, 120), (200, 150), (140, 100), (160, 130), (125, 95)]
+    for k in range(n):
+        w, h = sizes[k % 6]
+        pallets.append((1, 100 + k, T0 + 3.3 * k, w, h)); numbers[100 + k] = [1, 2, 3][k % 3]
+        pallets.append((2, 200 + k, T0 + 3.3 * k + 1.1, w, h)); numbers[200 + k] = [4, 5, 6][k % 3]
+    return pallets, numbers
+
+
+def _score(sim, numbers):
+    assigns = [(a["track_id"], a["physical_id"]) for a in sim.f.log.events("IDENTITY_ASSIGN")]
+    return sum(1 for tid, pid in assigns if numbers[tid] == pid), sum(1 for tid, pid in assigns if numbers[tid] != pid)
+
+
+def test_camera_delay_breaks_plain_matching_and_calibration_fixes_it():
+    import tempfile, os
+    pallets, numbers = _busy_loop()
+    end = T0 + 3.3 * 12 + 14.0
+
+    # 1) no delay compensation: the camera is late, so the wrong pallet is "closest"
+    sim = closest_sim()
+    _schedule_reads(sim, pallets, numbers)
+    sim.run(end, lambda t: _world(t, pallets, LATENCY))
+    ok, bad = _score(sim, numbers)
+    print(f"   delay {LATENCY}s, NOT compensated : correct={ok} wrong={bad} of 24")
+    assert bad > 0, "this scenario must reproduce wrong mappings"
+
+    # 2) calibration with ONE pallet per lane, several passes
+    cal = Sim(match_mode="closest", calibrate=True)
+    solo = [(1, 100 + k, T0 + 9.0 * k, 170, 114) for k in range(4)] + [(2, 200 + k, T0 + 9.0 * k + 4.5, 130, 100) for k in range(4)]
+    _schedule_reads(cal, solo, {p[1]: 1 for p in solo})
+    cal.run(T0 + 9.0 * 4 + 14.0, lambda t: _world(t, solo, LATENCY))
+    summary = cal.f.calibration_summary()
+    print("   calibration:", {k: (v["vision_delay_sec"], v["samples"]) for k, v in summary.items()})
+    assert abs(summary["RFID1"]["vision_delay_sec"] - LATENCY) < 0.08, summary
+    assert abs(summary["RFID2"]["vision_delay_sec"] - LATENCY) < 0.08, summary
+    assert not cal.f.log.events("IDENTITY_ASSIGN"), "calibration assigns nothing"
+
+    # file round trip (what the live program writes and reads)
+    path = os.path.join(tempfile.gettempdir(), "rfid_timing_test.json")
+    cal.f.write_calibration(path)
+    delays = fusion_mod.load_vision_delay(path)
+    assert set(delays) == {"RFID1", "RFID2"}
+
+    # 3) same busy loop with the measured delay
+    sim = closest_sim(vision_delay_sec=delays)
+    _schedule_reads(sim, pallets, numbers)
+    sim.run(end, lambda t: _world(t, pallets, LATENCY))
+    ok, bad = _score(sim, numbers)
+    print(f"   delay {LATENCY}s, compensated     : correct={ok} wrong={bad} of 24")
+    assert (ok, bad) == (24, 0)
+
+
+def test_calibration_says_so_when_the_reader_is_on_the_other_lane():
+    """If RFID1 were really the BOTTOM reader, no pallet is ever near it in the top lane."""
+    cal = Sim(match_mode="closest", calibrate=True)
+    solo = [(2, 200 + k, T0 + 9.0 * k, 150, 110) for k in range(3)]           # only bottom-lane pallets pass
+    for lane, tid, start, w, h in solo:                                         # ...but the tag is read by "RFID1"
+        centre = start + (853.5 - 500.0) / SPEED
+        cal.rfid_at(centre - 0.67, "RFID1", 4)
+        cal.rfid_leave_at(centre + 0.67, "RFID1", 4)
+    cal.run(T0 + 9.0 * 3 + 12.0, lambda t: _world(t, solo, 0.2))
+    skips = cal.f.log.events("RFID_CALIBRATION_SKIP")
+    print("   lane mismatch ->", skips[0]["reason"][:70] if skips else None)
+    assert skips and "OTHER lane" in skips[0]["reason"] and not cal.f.calibration_summary()
+
+
+def test_calibration_refuses_to_guess_with_several_pallets():
+    cal = Sim(match_mode="closest", calibrate=True)
+    pallets, numbers = _busy_loop(4)
+    _schedule_reads(cal, pallets, numbers)
+    cal.run(T0 + 3.3 * 4 + 14.0, lambda t: _world(t, pallets, 0.3))
+    skipped = cal.f.log.events("RFID_CALIBRATION_SKIP")
+    samples = cal.f.log.events("RFID_CALIBRATION_SAMPLE")
+    print(f"   several pallets: samples={len(samples)} skipped={len(skipped)}")
+    assert len(skipped) >= 1
+
+
+def test_missing_calibration_file_means_no_delay():
+    assert fusion_mod.load_vision_delay("/definitely/not/here.json") == {}
+
+
 def test_observed_hardware_timing_matches_with_stage34_windows():
     """From the real reader check: RFID1 tag appears ~0.67 s before the pallet is level with the
     box (1.34 s dwell), RFID2 ~0.21 s before (0.42 s dwell); pallets arrive ~3.3 s apart."""
