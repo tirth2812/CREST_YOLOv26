@@ -44,7 +44,7 @@ while True:
         continue
 
     pallet_frame = stage.make_pallet_frame(frame)
-    ring_mask = pallet_stage.create_ring_mask(pallet_frame.shape, boundary)
+    ring_mask = pallet_stage.create_ring_mask(pallet_frame.shape, boundary)[0]
 
     detections = stage.merge_pallet_detections(
         pallet_stage.get_yolo_detections(model, frame),
