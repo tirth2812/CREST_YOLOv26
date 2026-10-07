@@ -219,6 +219,12 @@ class EventLog:
         "STATION_LANE_MISS", "STATION_NO_ENTRY",
         "RFID_CLOSEST_MATCH", "RFID_NO_PALLET", "RFID_MATCH_AMBIGUOUS",
         "RFID_CALIBRATION_SAMPLE", "RFID_CALIBRATION_SKIP",
+        "RFID_READER_OK", "RFID_READER_STATS",
+    )
+    # vision-side bookkeeping: kept in the log file, never printed
+    NEVER_ECHO = (
+        "IDENTITY_REACQUIRE", "IDENTITY_COAST_START", "TRACK_APPEARED", "TRACK_LOST",
+        "TRACK_DEAD", "PASSAGE_TRACK_SWITCH",
     )
 
     def __init__(
@@ -247,7 +253,7 @@ class EventLog:
         self.records.append(rec)
         if self._thread is not None:
             self._q.put(rec)
-        if self.echo and (
+        if self.echo and event not in self.NEVER_ECHO and (
             self.echo_events is None
             or event in self.echo_events
             or event in self.ALWAYS_ECHO
@@ -309,6 +315,8 @@ class RFIDReaderWorker(threading.Thread):
         station_tags: Optional[dict] = None,
         poll_sec: float = 0.02,
         emit_repeats: bool = False,
+        timeout_sec: float = 5.0,
+        stats_sec: float = 10.0,
     ):
         super().__init__(name="crest-rfid-reader", daemon=True)
         self.out_queue = out_queue
@@ -317,6 +325,8 @@ class RFIDReaderWorker(threading.Thread):
         self.station_tags = station_tags or STATION_PLC_TAGS
         self.poll_sec = poll_sec
         self.emit_repeats = emit_repeats
+        self.timeout_sec = timeout_sec
+        self.stats_sec = stats_sec
         self.stop_event = threading.Event()
         self.last_ok_time = 0.0
         self.error_count = 0
@@ -325,6 +335,33 @@ class RFIDReaderWorker(threading.Thread):
 
     def stop(self):
         self.stop_event.set()
+
+    def _read_all(self, comm, flat_tags):
+        """(values_by_station | None, set_of_problems).  One round trip for all words."""
+        responses = comm.Read(flat_tags)
+
+        if not isinstance(responses, (list, tuple)):
+            responses = [responses]
+
+        if len(responses) != len(flat_tags):
+            return None, {f"expected {len(flat_tags)} answers, got {len(responses)}"}
+
+        problems = set()
+        values = {}
+        index = 0
+        for station, tags in self.station_tags.items():
+            words = []
+            for _ in tags:
+                response = responses[index]
+                index += 1
+                if response.Status != "Success":
+                    problems.add(str(response.Status))
+                elif response.Value is None:
+                    problems.add("no value")
+                words.append(response.Value)
+            values[station] = tuple(words)
+
+        return (None, problems) if problems else (values, problems)
 
     def run(self):
         try:
@@ -338,53 +375,88 @@ class RFIDReaderWorker(threading.Thread):
             flat_tags.extend(tags)
 
         comm = None
-        backoff = 0.5
+        failures = 0                       # consecutive failed polls
+        was_ok = False
+        window_start = time.monotonic()
+        window_polls = 0
+        window_errors = 0
+        last_poll = None
+        max_gap = 0.0
+
         while not self.stop_event.is_set():
+            problems = set()
+            values = None
+            stamp = time.monotonic()
+
             try:
                 if comm is None:
                     comm = PLC()
                     comm.IPAddress = self.plc_ip
-                    comm.SocketTimeout = 1.0
+                    comm.SocketTimeout = self.timeout_sec
 
-                responses = comm.Read(flat_tags)
+                values, problems = self._read_all(comm, flat_tags)
                 stamp = time.monotonic()  # taken as soon as the read returns
 
-                values = {}
-                index = 0
-                ok = True
-                for station, tags in self.station_tags.items():
-                    words = []
-                    for _ in tags:
-                        response = responses[index]
-                        index += 1
-                        if response.Status != "Success" or response.Value is None:
-                            ok = False
-                        words.append(response.Value)
-                    values[station] = tuple(words)
-
-                if not ok:
-                    raise RuntimeError("PLC read returned a non-success status")
-
-                self.connected = True
-                self.last_ok_time = stamp
-                backoff = 0.5
-                for station, raw in values.items():
-                    self._handle_value(station, raw, stamp)
-
-                self.stop_event.wait(self.poll_sec)
-
             except Exception as error:
-                self.connected = False
+                values, problems = None, {f"{type(error).__name__}: {error}"}
+
+            # ---- failed poll: retry at once, reconnect only if it keeps failing
+            if values is None:
+                failures += 1
                 self.error_count += 1
-                self.log.log("RFID_READER_ERROR", reason=str(error), count=self.error_count)
-                try:
-                    if comm is not None:
-                        comm.Close()
-                except Exception:
-                    pass
-                comm = None
-                self.stop_event.wait(backoff)
-                backoff = min(5.0, backoff * 2.0)
+                window_errors += 1
+                self.connected = False
+
+                if failures in (1, 5, 20) or failures % 200 == 0:
+                    self.log.log(
+                        "RFID_READER_ERROR", reason=f"PLC read not successful: {sorted(problems)}",
+                        consecutive=failures, count=self.error_count,
+                    )
+
+                if failures >= 3:
+                    try:
+                        if comm is not None:
+                            comm.Close()
+                    except Exception:
+                        pass
+                    comm = None
+                    self.stop_event.wait(min(1.0, 0.2 * (failures - 2)))
+                else:
+                    self.stop_event.wait(0.05)
+                continue
+
+            # ---- good poll
+            if failures or not was_ok:
+                self.log.log(
+                    "RFID_READER_OK",
+                    note=("connected" if not was_ok else f"recovered after {failures} failed polls"),
+                )
+            failures = 0
+            was_ok = True
+            self.connected = True
+            self.last_ok_time = stamp
+            window_polls += 1
+
+            if last_poll is not None:
+                max_gap = max(max_gap, stamp - last_poll)
+            last_poll = stamp
+
+            for station, raw in values.items():
+                self._handle_value(station, raw, stamp)
+
+            if stamp - window_start >= self.stats_sec:
+                span = stamp - window_start
+                self.log.log(
+                    "RFID_READER_STATS", polls_per_sec=round(window_polls / span, 1),
+                    longest_gap_sec=round(max_gap, 3), failed_polls=window_errors,
+                    note="longest_gap_sec large = the PLC is not being read often enough",
+                )
+                window_start = stamp
+                window_polls = 0
+                window_errors = 0
+                max_gap = 0.0
+
+            self.stop_event.wait(self.poll_sec)
 
     def _handle_value(self, station: str, raw: tuple, stamp: float):
         previous = self._last_value[station]

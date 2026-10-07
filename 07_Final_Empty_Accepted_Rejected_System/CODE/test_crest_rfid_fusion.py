@@ -1015,6 +1015,95 @@ def test_reader_survives_plc_errors():
     assert worker.error_count >= 1 and log.events("RFID_READER_ERROR")
 
 
+
+def _fake_plc(script):
+    """script: list of per-Read results; each is a dict {station: tuple} (all Success)
+    or a status string such as "Connection failed" (every word gets that status)."""
+    import types
+    state = {"i": 0, "created": 0, "closed": 0}
+
+    class R:
+        def __init__(s, v, st="Success"): s.Value, s.Status = v, st
+
+    class PLC:
+        IPAddress = None
+        SocketTimeout = None
+        def __init__(self): state["created"] += 1
+        def Close(self): state["closed"] += 1
+        def Read(self, tags):
+            if state["i"] >= len(script):
+                raise KeyboardInterrupt
+            step = script[state["i"]]; state["i"] += 1
+            if isinstance(step, str):
+                return [R(None, step) for _ in tags]
+            words = list(step.get("RFID1", (0, 0, 0, 0))) + list(step.get("RFID2", (0, 0, 0, 0)))
+            return [R(w) for w in words]
+
+    m = types.ModuleType("pylogix"); m.PLC = PLC; sys.modules["pylogix"] = m
+    return state
+
+
+def _run_worker(script, **kw):
+    import queue as queue_mod, threading, time as time_mod
+    state = _fake_plc(script)
+    q = queue_mod.Queue()
+    log = fusion_mod.EventLog(echo=False)
+    worker = fusion_mod.RFIDReaderWorker(q, log, poll_sec=0.001, **kw)
+    worker.start()
+    deadline = time_mod.time() + 5.0
+    while state["i"] < len(script) and time_mod.time() < deadline:
+        time_mod.sleep(0.01)
+    time_mod.sleep(0.15)
+    worker.stop(); worker.join(timeout=2.0)
+    del sys.modules["pylogix"]
+    items = []
+    while not q.empty():
+        items.append(q.get())
+    return items, log, worker, state
+
+
+def test_reader_retries_a_bad_poll_without_dropping_the_connection():
+    tag3 = (-8188, 336, -18499, 21259)
+    none = (0, 0, 0, 0)
+    script = [{"RFID1": none}, "Connection failed", {"RFID1": tag3}, {"RFID1": tag3}, {"RFID1": none}]
+    items, log, worker, state = _run_worker(script)
+    enters = [i for i in items if isinstance(i, fusion_mod.RFIDEvent)]
+    assert [(e.station, e.pallet_id) for e in enters] == [("RFID1", 3)], "the tag after the glitch is still read"
+    assert state["created"] == 1 and state["closed"] == 0, "one bad poll must not reconnect"
+    assert log.events("RFID_READER_OK")[0]["note"] == "connected"
+
+
+def test_reader_reports_the_plc_status_text_and_recovers():
+    tag5 = (-8188, 336, -18498, 5934)
+    script = [{"RFID2": (0, 0, 0, 0)}] + ["Connection failed"] * 6 + [{"RFID2": tag5}, {"RFID2": tag5}, {"RFID2": (0, 0, 0, 0)}]
+    items, log, worker, state = _run_worker(script)
+    errors = log.events("RFID_READER_ERROR")
+    assert errors and "Connection failed" in errors[0]["reason"], errors
+    assert state["created"] >= 2 and state["closed"] >= 1, "keeps failing -> reconnects"
+    assert any("recovered" in e["note"] for e in log.events("RFID_READER_OK"))
+    assert [(e.station, e.pallet_id) for e in items if isinstance(e, fusion_mod.RFIDEvent)] == [("RFID2", 5)]
+
+
+def test_reader_health_line_reports_poll_rate_and_longest_gap():
+    none = (0, 0, 0, 0)
+    items, log, worker, state = _run_worker([{"RFID1": none}] * 400, stats_sec=0.05)
+    stats = log.events("RFID_READER_STATS")
+    assert stats and stats[0]["polls_per_sec"] > 10 and "longest_gap_sec" in stats[0]
+
+
+def test_vision_bookkeeping_events_never_reach_the_console():
+    import contextlib, io
+    log = fusion_mod.EventLog(echo=True)                  # echo EVERYTHING by default
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        log.log("IDENTITY_REACQUIRE", track_id=1)
+        log.log("TRACK_APPEARED", track_id=1)
+        log.log("IDENTITY_ASSIGN", track_id=1, physical_id=3)
+    out = buf.getvalue()
+    assert "IDENTITY_ASSIGN" in out and "IDENTITY_REACQUIRE" not in out and "TRACK_APPEARED" not in out
+    assert len(log.records) == 3, "still kept for the log file"
+
+
 def test_reader_missing_pylogix_disables_only_rfid():
     import queue as queue_mod
     sys.modules["pylogix"] = None            # forces ImportError
